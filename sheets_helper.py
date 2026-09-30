@@ -1,7 +1,9 @@
-"""
-Google Sheets bilan ishlash: tranzaksiya qo'shish va joriy balansni o'qish.
-"""
+"""Google Sheets bilan ishlash: har bir foydalanuvchi o'z jadvaliga yozadi."""
+import datetime
+import json
 import os
+from collections import defaultdict
+
 import gspread
 from google.oauth2.service_account import Credentials
 
@@ -9,31 +11,69 @@ SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
 
 TRANZAKSIYA_VARAQ = "Tranzaksiyalar"
 DASHBOARD_VARAQ = "Dashboard"
+SARLAVHALAR = ["Sana", "Vaqt", "Turi", "Kategoriya", "Summa", "Izoh", "Asl matn"]
 
 _client = None
-_sheet = None
+_jadvallar = {}  # sheet_id -> gspread.Spreadsheet (kesh)
 
 
-def _ulanish():
-  global _client, _sheet
-  if _sheet is None:
-    # 1. Проверяем наличие файла в Render Secret Files
-    if os.path.exists('/etc/secrets/credentials.json'):
-      creds_fayl = '/etc/secrets/credentials.json'
+def _kredensiallar():
+    global _client
+    if _client is None:
+        if os.path.exists("/etc/secrets/credentials.json"):
+            creds_fayl = "/etc/secrets/credentials.json"
+        else:
+            creds_fayl = os.getenv("GOOGLE_CREDENTIALS_FILE", "credentials.json")
+        creds = Credentials.from_service_account_file(creds_fayl, scopes=SCOPES)
+        _client = gspread.authorize(creds)
+    return _client
+
+
+def xizmat_akkaunt_email() -> str:
+    """credentials.json dagi service account email'ni qaytaradi (foydalanuvchilarga ulash uchun)."""
+    if os.path.exists("/etc/secrets/credentials.json"):
+        creds_fayl = "/etc/secrets/credentials.json"
     else:
-      # 2. Если файла нет по секретному пути, ищем через env или локальный файл
-      creds_fayl = os.getenv('GOOGLE_CREDENTIALS_FILE', 'credentials.json')
-
-    creds = Credentials.from_service_account_file(creds_fayl, scopes=SCOPES)
-    _client = gspread.authorize(creds)
-    sheet_id = os.getenv('GOOGLE_SHEET_ID')
-    _sheet = _client.open_by_key(sheet_id)
-  return _sheet
+        creds_fayl = os.getenv("GOOGLE_CREDENTIALS_FILE", "credentials.json")
+    with open(creds_fayl, encoding="utf-8") as f:
+        return json.load(f).get("client_email", "(noma'lum)")
 
 
-def tranzaksiya_qoshish(yozuv: dict):
+def _jadval_ol(sheet_id=None):
+    """Berilgan sheet_id uchun jadvalni qaytaradi (kesh bilan)."""
+    if not sheet_id:
+        sheet_id = os.getenv("GOOGLE_SHEET_ID")
+    if sheet_id not in _jadvallar:
+        _jadvallar[sheet_id] = _kredensiallar().open_by_key(sheet_id)
+    return _jadvallar[sheet_id]
+
+
+def jadval_ochiladimi(sheet_id: str) -> bool:
+    """Foydalanuvchi jadvaliga bot kira olishini tekshiradi."""
+    try:
+        _kredensiallar().open_by_key(sheet_id)
+        return True
+    except Exception:
+        return False
+
+
+def yangi_jadvalni_tayyorla(sheet_id: str):
+    """Yangi foydalanuvchi jadvaliga Tranzaksiyalar va Dashboard varaqlarini
+    CHIROYLI DIZAYN bilan (KPI kartalar, grafiklar) yaratadi.
+    setup_sheet.py'dagi to'liq UI quruvchidan foydalanadi."""
+    from setup_sheet import toliq_tayyorla
+
+    sheet = _jadval_ol(sheet_id)
+    toliq_tayyorla(sheet)
+    # keshni yangilaymiz
+    _jadvallar.pop(sheet_id, None)
+
+
+# --- Barcha funksiyalar endi sheet_id parametrini oladi (None bo'lsa .env'dagi jadval) ---
+
+def tranzaksiya_qoshish(yozuv: dict, sheet_id=None):
     """Bitta tranzaksiyani 'Tranzaksiyalar' varagiga qator qilib qo'shadi."""
-    sheet = _ulanish()
+    sheet = _jadval_ol(sheet_id)
     ws = sheet.worksheet(TRANZAKSIYA_VARAQ)
     ws.append_row(
         [
@@ -49,18 +89,16 @@ def tranzaksiya_qoshish(yozuv: dict):
     )
 
 
-def barcha_yozuvlarni_olish() -> list:
-    """'Tranzaksiyalar' varag'idagi barcha yozuvlarni (sarlavha bilan) qaytaradi.
-    Har bir satr (row, values) kabi tuple sifatida ham kerak bo'lishi uchun
-    qator raqami 2 dan boshlanadi."""
-    sheet = _ulanish()
+def barcha_yozuvlarni_olish(sheet_id=None) -> list:
+    """'Tranzaksiyalar' varag'idagi barcha yozuvlarni (sarlavha bilan) qaytaradi."""
+    sheet = _jadval_ol(sheet_id)
     ws = sheet.worksheet(TRANZAKSIYA_VARAQ)
     return ws.get_all_values()
 
 
-def oxirgi_yozuvlarni_olish(soni: int = 5) -> list:
+def oxirgi_yozuvlarni_olish(soni: int = 5, sheet_id=None) -> list:
     """Oxirgi N yozuvni [(qator_raqami, [qiymatlar]), ...] ko'rinishida qaytaradi."""
-    sheet = _ulanish()
+    sheet = _jadval_ol(sheet_id)
     ws = sheet.worksheet(TRANZAKSIYA_VARAQ)
     barchasi = ws.get_all_values()
     natija = []
@@ -71,24 +109,24 @@ def oxirgi_yozuvlarni_olish(soni: int = 5) -> list:
     return natija[-soni:]
 
 
-def yozuvni_ochirish(qator_raqami: int):
+def yozuvni_ochirish(qator_raqami: int, sheet_id=None):
     """Berilgan qatordagi yozuvni o'chiradi."""
-    sheet = _ulanish()
+    sheet = _jadval_ol(sheet_id)
     ws = sheet.worksheet(TRANZAKSIYA_VARAQ)
     ws.delete_rows(qator_raqami)
 
 
-def yozuvni_yangilash(qator_raqami: int, qiymatlar: list):
+def yozuvni_yangilash(qator_raqami: int, qiymatlar: list, sheet_id=None):
     """Berilgan qatordagi yozuvni yangi qiymatlar bilan almashtiradi."""
-    sheet = _ulanish()
+    sheet = _jadval_ol(sheet_id)
     ws = sheet.worksheet(TRANZAKSIYA_VARAQ)
     ws.update(f"A{qator_raqami}:G{qator_raqami}", [qiymatlar],
               value_input_option="USER_ENTERED")
 
 
-def tranzaksiyalarni_tozalash() -> int:
+def tranzaksiyalarni_tozalash(sheet_id=None) -> int:
     """Barcha tranzaksiya yozuvlarini o'chiradi (sarlavha qoladi). O'chirilgan sonini qaytaradi."""
-    sheet = _ulanish()
+    sheet = _jadval_ol(sheet_id)
     ws = sheet.worksheet(TRANZAKSIYA_VARAQ)
     jami = len(ws.get_all_values())
     ochirilgan = max(jami - 1, 0)
@@ -98,15 +136,18 @@ def tranzaksiyalarni_tozalash() -> int:
     return ochirilgan
 
 
-def dashboard_matnini_olish() -> str:
+def dashboard_matnini_olish(sheet_id=None) -> str:
     """Hisobotni TO'G'RIDA Tranzaksiyalar ma'lumotlaridan hisoblaydi
     (Dashboard formulalari keshi eski qiymat qaytarishi mumkin bo'lgani uchun).
     Davr chegaralarini Dashboard'dagi Dan/Gacha kataklaridan o'qiydi."""
     import datetime
     from collections import defaultdict
 
-    sheet = _ulanish()
-    dash = sheet.worksheet(DASHBOARD_VARAQ)
+    sheet = _jadval_ol(sheet_id)
+    try:
+        dash = sheet.worksheet(DASHBOARD_VARAQ)
+    except gspread.WorksheetNotFound:
+        dash = None
 
     # Dashboard'dagi filtr sanalarini o'qish (bo'lmasa — shu oy)
     bugun = datetime.date.today()

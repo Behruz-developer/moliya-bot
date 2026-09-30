@@ -71,13 +71,11 @@ def _kpi_karta(dash, diapazon_label, diapazon_qiymat, matn, formula, bg):
     dash.format(diapazon_qiymat, {"numberFormat": {"type": "NUMBER", "pattern": SUMMA_FORMAT}})
 
 
-def asosiy():
+def toliq_tayyorla(sheet):
+    """Berilgan gspread jadvalga (Spreadsheet obyekt) to'liq UI'ni quradi:
+    Tranzaksiyalar (dizayn bilan) + Dashboard (KPI kartalar, grafiklar).
+    Har bir yangi foydalanuvchi uchun bot ishlatadi."""
     from categories import DAROMAD_KATEGORIYALARI, HARAJAT_KATEGORIYALARI
-
-    creds_fayl = os.getenv("GOOGLE_CREDENTIALS_FILE", "credentials.json")
-    creds = Credentials.from_service_account_file(creds_fayl, scopes=SCOPES)
-    client = gspread.authorize(creds)
-    sheet = client.open_by_key(os.getenv("GOOGLE_SHEET_ID"))
 
     # --- 1. Tranzaksiyalar varag'i ---
     try:
@@ -132,7 +130,6 @@ def asosiy():
                 "range": {"sheetId": tranz.id, "startRowIndex": 1, "endRowIndex": 2000,
                           "startColumnIndex": 0, "endColumnIndex": 7},
                 "rowProperties": {
-                    "headerBandSize": 1,
                     "firstBandColor": {"red": 0.96, "green": 0.97, "blue": 0.98},
                     "secondBandColor": {"red": 0.99, "green": 0.99, "blue": 1},
                 },
@@ -157,11 +154,16 @@ def asosiy():
     _dashboard_yarat(sheet, dash_title="Dashboard",
                      daromad_kat=DAROMAD_KATEGORIYALARI,
                      harajat_kat=HARAJAT_KATEGORIYALARI)
-    _dashboard_yarat(sheet, dash_title="Dashboard",
-                     daromad_kat=DAROMAD_KATEGORIYALARI,
-                     harajat_kat=HARAJAT_KATEGORIYALARI)
 
     print("Tayyor! Dashboard chiroyli dizayn bilan sozlandi ✨")
+
+
+def asosiy():
+    creds_fayl = os.getenv("GOOGLE_CREDENTIALS_FILE", "credentials.json")
+    creds = Credentials.from_service_account_file(creds_fayl, scopes=SCOPES)
+    client = gspread.authorize(creds)
+    sheet = client.open_by_key(os.getenv("GOOGLE_SHEET_ID"))
+    toliq_tayyorla(sheet)
 
 
 def _dashboard_yarat(sheet, dash_title, daromad_kat, harajat_kat):
