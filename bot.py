@@ -2,6 +2,10 @@
 Moliya bot — Telegram orqali matn/ovozli xabarlarni qabul qilib,
 AI bilan tahlil qiladi va Google Sheets'ga yozadi.
 """
+from keep_alive import keep_alive
+
+keep_alive()
+
 import asyncio
 import os
 import csv
