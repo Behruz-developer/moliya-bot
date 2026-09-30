@@ -62,8 +62,11 @@ def _natijani_tayyorla(xom_javob_matni: str, original_matn: str = "") -> dict:
     if not original_matn:
         original_matn = natija.get("eshitilgan_matn", "")
     natija["original_matn"] = original_matn
-    natija["sana"] = datetime.date.today().isoformat()
-    natija["vaqt"] = datetime.datetime.now().strftime("%H:%M")
+    # Vaqt/sana — doim Toshkent vaqti bo'yicha (server UTC bo'lsa ham to'g'ri)
+    from zoneinfo import ZoneInfo
+    hozir = datetime.datetime.now(ZoneInfo("Asia/Tashkent"))
+    natija["sana"] = hozir.date().isoformat()
+    natija["vaqt"] = hozir.strftime("%H:%M")
     return natija
 
 
