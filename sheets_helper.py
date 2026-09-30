@@ -15,14 +15,23 @@ _sheet = None
 
 
 def _ulanish():
-    global _client, _sheet
-    if _sheet is None:
-        creds_fayl = os.getenv("GOOGLE_CREDENTIALS_FILE", "credentials.json")
-        creds = Credentials.from_service_account_file(creds_fayl, scopes=SCOPES)
-        _client = gspread.authorize(creds)
-        sheet_id = os.getenv("GOOGLE_SHEET_ID")
-        _sheet = _client.open_by_key(sheet_id)
-    return _sheet
+  global _client, _sheet
+  if _sheet is None:
+    # 1. Environment variable berilgan bo'lsa o'shani oladi
+    creds_fayl = os.getenv("GOOGLE_CREDENTIALS_FILE")
+
+    # 2. Agar ko'rsatilmagan bo'lsa, Render Secret Files manzilini tekshiradi
+    if not creds_fayl or not os.path.exists(creds_fayl):
+      if os.path.exists("/etc/secrets/credentials.json"):
+        creds_fayl = "/etc/secrets/credentials.json"
+      else:
+        creds_fayl = "credentials.json"
+
+    creds = Credentials.from_service_account_file(creds_fayl, scopes=SCOPES)
+    _client = gspread.authorize(creds)
+    sheet_id = os.getenv("GOOGLE_SHEET_ID")
+    _sheet = _client.open_by_key(sheet_id)
+  return _sheet
 
 
 def tranzaksiya_qoshish(yozuv: dict):
