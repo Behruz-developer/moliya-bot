@@ -54,7 +54,7 @@ MENYU_BALANS = "📊 Balansni ko'rish"
 MENYU_OXIRGI = "🕓 Oxirgi yozuvlar (o'chirish/tuzatish)"
 MENYU_FAYL = "📥 Ma'lumotlarni faylda olish"
 MENYU_TOZALASH = "🧹 Barcha yozuvlarni tozalash"
-MENYU_JADVAL = "🔗 Jadvalni ulash"
+MENYU_JADVAL = "🔗 Jadvalni o'zgartirish"
 
 ASOSIY_MENYU = ReplyKeyboardMarkup(
     [[MENYU_BALANS], [MENYU_OXIRGI], [MENYU_FAYL], [MENYU_TOZALASH], [MENYU_JADVAL]],
@@ -107,13 +107,15 @@ def _sozlash_yorignomasi() -> str:
     email = xizmat_akkaunt_email()
     return (
         "👋 Salom! Men shaxsiy moliya botingizman.\n\n"
-        "🔧 BIRINCHI SOZLASH (bir marta):\n"
-        "1️⃣ Google Sheets'da yangi jadval ochingiz\n"
-        f"2️⃣ Uni quyidagi email bilan **Tahrirlash (Editor)** huquqida ulashing:\n"
-        f"   {email}\n"
-        "3️⃣ Jadval havolasini (URL) shu chatga yuboring\n\n"
-        "Bot o'zi Tranzaksiyalar va Dashboard varaqlarini yaratadi ✅\n\n"
-        "Jadvalni o'zgartirish uchun: /jadval"
+        "🔧 Botni ishlatish uchun avval Google Sheets ochib olamiz:\n\n"
+        "1️⃣ Quyidagi link orqali Google Sheets'ga kiring va yangi jadval oching:\n"
+        "https://sheets.google.com\n\n"
+        f"2️⃣ Yangi jadvalni quyidagi email bilan Editor (Tahrirlash) qilib ulashing:\n"
+        f"{email}\n\n"
+        "3️⃣ Jadvalning linkini nusxalab, shu yerga yuboring.\n\n"
+        "✅ Shu bilan bo'ldi. Qolganini bot o'zi qiladi.\n\n"
+        "📊 Bot kerakli varaqlarni o'zi yaratadi.\n\n"
+        "Jadvalni keyin o'zgartirish uchun: /jadval"
     )
 
 
@@ -215,11 +217,16 @@ async def jadval_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if query.data == "jadval_almashish_ha":
         context.user_data["jadval_kutmoqda"] = True
+        email = xizmat_akkaunt_email()
         await query.edit_message_text(
-            "🔗 Yangi jadvalni ulash rejimi yoqildi.\n\n"
-            "Google Sheets havolasini (URL yoki ID) yuboring — jadval avval "
-            "tekshiriladi, so'ng chiroyli Dashboard bilan tayyorlanadi.\n\n"
-            "(Bekor qilish uchun: /jadval ni qayta bosing yoki /tuzatish_bekor)"
+            "🔧 YANGI JADVAL ULASH — QADAMMA-QADAM:\n\n"
+            "1️⃣ Quyidagi link orqali Google Sheets'ga kiring va YANGI jadval oching:\n"
+            "https://sheets.google.com\n\n"
+            f"2️⃣ Yangi jadvalni quyidagi email bilan Editor (Tahrirlash) qilib ulashing:\n"
+            f"{email}\n\n"
+            "3️⃣ Jadvalning linkini nusxalab, shu yerga yuboring.\n\n"
+            "✅ Shu bilan bo'ldi. Qolganini bot o'zi qiladi.\n\n"
+            "📊 Bot kerakli varaqlarni o'zi yaratadi."
         )
 
 
