@@ -1,0 +1,74 @@
+[
+  {
+    "sana": "2026-09-30",
+    "vaqt": "18:59",
+    "turi": "Daromad",
+    "kategoriya": "Oylik",
+    "summa": "4 000 000 so'm",
+    "izoh": "Oylik maosh olindi",
+    "asl_matn": "4 million oylik oldim"
+  },
+  {
+    "sana": "2026-09-30",
+    "vaqt": "18:12",
+    "turi": "Daromad",
+    "kategoriya": "Oylik",
+    "summa": "4 000 000 so'm",
+    "izoh": "Bugun oylik maosh olindi",
+    "asl_matn": "Bugun 4 million som oylik oldim"
+  },
+  {
+    "sana": "2026-09-30",
+    "vaqt": "18:13",
+    "turi": "Harajat",
+    "kategoriya": "Qarz/Kredit",
+    "summa": "2 000 000 so'm",
+    "izoh": "Qarzni qaytarish",
+    "asl_matn": "2 million so'm qarzim bor edi o'sha qarzimni berdim"
+  },
+  {
+    "sana": "2026-09-30",
+    "vaqt": "23:23",
+    "turi": "Harajat",
+    "kategoriya": "Transport",
+    "summa": "200 000 so'm",
+    "izoh": "Benzin sotib olish",
+    "asl_matn": "200 ming so'mga benzin quydim"
+  },
+  {
+    "sana": "2026-09-30",
+    "vaqt": "23:25",
+    "turi": "Harajat",
+    "kategoriya": "Uy-ro'zg'or",
+    "summa": "300 000 so'm",
+    "izoh": "Uyga ro'zg'or xaridi",
+    "asl_matn": "Uyga 300000 so'mlik rozgor qildim"
+  },
+  {
+    "sana": "2026-10-01",
+    "vaqt": "00:23",
+    "turi": "Daromad",
+    "kategoriya": "Oylik",
+    "summa": "2 000 000 so'm",
+    "izoh": "Bugun oylik maosh olindi",
+    "asl_matn": "Bugun 2 million so'm oylik oldim"
+  },
+  {
+    "sana": "2026-10-01",
+    "vaqt": "08:54",
+    "turi": "Harajat",
+    "kategoriya": "Oziq-ovqat",
+    "summa": "50 000 so'm",
+    "izoh": "Nonushta uchun qilingan harajat",
+    "asl_matn": "Bugun 50 ming so'm zavtrakka ishlatdim."
+  },
+  {
+    "sana": "2026-10-01",
+    "vaqt": "20:03",
+    "turi": "Harajat",
+    "kategoriya": "Oziq-ovqat",
+    "summa": "200 000 so'm",
+    "izoh": "Oziq-ovqat uchun xarajat",
+    "asl_matn": "Oziq-ovqat uchun 200 ming so'm sarfladim"
+  }
+]
