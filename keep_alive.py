@@ -50,6 +50,8 @@ def _kat_html(chat_id):
 def _sahifa(chat_id):
     stat = data_store.stat_olish(chat_id)
     balans = stat["umumiy_daromad"] - stat["umumiy_harajat"]
+    _kat_h = _kat_html(chat_id) or "<div class=\"empty\">Ma'lumot yo'q</div>"
+    _yoz_h = _yozuvlar_html(chat_id)
     return f"""<!doctype html>
 <html lang="uz">
 <head>
@@ -110,12 +112,12 @@ h1 span {{ color: #38bdf8; }}
 
 <div class="section">
   <h2>Kategoriyalar (shu oy)</h2>
-  {_kat_html(chat_id) or '<div class="empty">Ma\'lumot yo\'q</div>'}
+  {_kat_h}
 </div>
 
 <div class="section">
   <h2>Barcha yozuvlar ({stat['jami_yozuvlar']})</h2>
-  {_yozuvlar_html(chat_id)}
+  {_yoz_h}
 </div>
 
 <div class="actions">
