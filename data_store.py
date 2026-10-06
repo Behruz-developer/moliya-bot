@@ -13,6 +13,7 @@ DATA_JILD = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
 _qulf = threading.Lock()
 
 
+
 def _fayl_yuli(chat_id) -> str:
     os.makedirs(DATA_JILD, exist_ok=True)
     return os.path.join(DATA_JILD, f"{chat_id}.json")
