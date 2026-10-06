@@ -9,7 +9,12 @@ import logging
 import datetime
 from dotenv import load_dotenv
 from google import genai
-from categories import DAROMAD_KATEGORIYALARI, HARAJAT_KATEGORIYALARI
+from categories import (
+    DAROMAD_KATEGORIYALARI,
+    HARAJAT_KATEGORIYALARI,
+    DAROMAD_KATEGORIYALARI_RU,
+    HARAJAT_KATEGORIYALARI_RU,
+)
 
 load_dotenv()  # .env qiymatlarini shu yerda ham yuklaymiz, import tartibiga bog'liq bo'lmasin
 
@@ -31,7 +36,33 @@ MODEL_NOMI = os.getenv("GEMINI_MODEL", "gemini-3.5-flash")
 # Asosiy model 503 (yuk yuqori) yoki 404 qaytarsa, navbatma-navbat shularga urinamiz.
 ZAXIRA_MODELLAR = ["gemini-3.8-flash", "gemini-3.5-flash-lite"]
 
-SYSTEM_PROMPT = f"""Sen moliyaviy yordamchisan. Foydalanuvchi o'zbek tilida
+def _system_prompt(til: str = "uz") -> str:
+    """Tilga mos system prompt qaytaradi (til='uz' yoki 'ru')."""
+    if til == "ru":
+        daromad_list = ", ".join(DAROMAD_KATEGORIYALARI_RU)
+        harajat_list = ", ".join(HARAJAT_KATEGORIYALARI_RU)
+        return f"""Ты финансовый помощник. Пользователь присылает сообщение
+(текстом или голосом, в разговорном стиле) — проанализируй его и ответь
+ТОЛЬКО в следующем JSON-формате, без какого-либо дополнительного текста:
+
+{{
+  "turi": "daromad" или "harajat" или "noaniq",
+  "summa": <число в сумах, например 4000000>,
+  "kategoriya": "<одно из списка ниже>",
+  "izoh": "<короткий комментарий, не длиннее 5-6 слов>",
+  "eshitilgan_matn": "<если ввод голосовой — запиши здесь расшифровку; если текстовый — оставь пустым>"
+}}
+
+Если turi = daromad (доход), категория должна быть одной из: {daromad_list}
+Если turi = harajat (расход), категория должна быть одной из: {harajat_list}
+
+Правильно понимай суммы: "4 миллиона", "4 млн", "4000000", "4 тысячи" (=4000)
+и т.п. переводи в правильное число. Если финансовой информации в сообщении
+вообще нет, верни turi = "noaniq".
+"""
+    daromad_list = ", ".join(DAROMAD_KATEGORIYALARI)
+    harajat_list = ", ".join(HARAJAT_KATEGORIYALARI)
+    return f"""Sen moliyaviy yordamchisan. Foydalanuvchi o'zbek tilida
 (yozma yoki ovozli, so'zlashuv uslubida) yuborgan xabarni tahlil qilib,
 FAQAT quyidagi JSON formatda javob ber, hech qanday qo'shimcha matn yozma:
 
@@ -43,16 +74,16 @@ FAQAT quyidagi JSON formatda javob ber, hech qanday qo'shimcha matn yozma:
   "eshitilgan_matn": "<agar kirish ovozli xabar bo'lsa, eshitgan gapingizni shu yerga yoz; matnli xabar bo'lsa bo'sh qoldir>"
 }}
 
-Agar turi = daromad bo'lsa, kategoriya shulardan biri bo'lishi kerak: {", ".join(DAROMAD_KATEGORIYALARI)}
-Agar turi = harajat bo'lsa, kategoriya shulardan biri bo'lishi kerak: {", ".join(HARAJAT_KATEGORIYALARI)}
+Agar turi = daromad bo'lsa, kategoriya shulardan biri bo'lishi kerak: {daromad_list}
+Agar turi = harajat bo'lsa, kategoriya shulardan biri bo'lishi kerak: {harajat_list}
 
 Summalarni to'g'ri tushun: "4 million", "4mln", "4000000", "4 ming" (=4000) kabi
 ifodalarni to'g'ri songa o'gir. Agar xabarda moliyaviy ma'lumot umuman
 topilmasa, "turi" ni "noaniq" qilib qaytar.
 """
 
+
 _GENERATION_CONFIG = {
-    "system_instruction": SYSTEM_PROMPT,
     "response_mime_type": "application/json",
 }
 
@@ -70,9 +101,12 @@ def _natijani_tayyorla(xom_javob_matni: str, original_matn: str = "") -> dict:
     return natija
 
 
-def _generate(contents):
+def _generate(contents, til: str = "uz"):
     """Asosiy model ishlamasa (503/404), zaxira modellarda urinib ko'radi."""
     from google.genai import errors as genai_errors
+
+    config = dict(_GENERATION_CONFIG)
+    config["system_instruction"] = _system_prompt(til)
 
     modellar = [MODEL_NOMI] + [m for m in ZAXIRA_MODELLAR if m != MODEL_NOMI]
     oxirgi_xato = None
@@ -81,7 +115,7 @@ def _generate(contents):
             javob = _client.models.generate_content(
                 model=model,
                 contents=contents,
-                config=_GENERATION_CONFIG,
+                config=config,
             )
             if not javob.text:
                 raise ValueError("AI bo'sh javob qaytardi")
@@ -92,15 +126,20 @@ def _generate(contents):
     raise oxirgi_xato
 
 
-def matnni_tahlil_qil(matn: str) -> dict:
+def matnni_tahlil_qil(matn: str, til: str = "uz") -> dict:
     """Yozma xabarni AI orqali tuzilgan moliyaviy yozuvga aylantiradi."""
-    javob_matni = _generate(matn)
+    javob_matni = _generate(matn, til=til)
     return _natijani_tayyorla(javob_matni, original_matn=matn)
 
 
-def ovozni_tahlil_qil(fayl_yuli: str) -> dict:
+def ovozni_tahlil_qil(fayl_yuli: str, til: str = "uz") -> dict:
     """Ovozli xabar faylini (ogg) to'g'ridan-to'g'ri Gemini'ga yuborib,
     bir martada matnga o'giradi va moliyaviy yozuvga aylantiradi."""
     audio_fayl = _client.files.upload(file=fayl_yuli)
-    javob_matni = _generate(["Bu ovozli xabarni tingla va tahlil qil.", audio_fayl])
+    sorov = (
+        "Ты услышал голосовое сообщение. Расшифруй его и проанализируй."
+        if til == "ru"
+        else "Bu ovozli xabarni tingla va tahlil qil."
+    )
+    javob_matni = _generate([sorov, audio_fayl], til=til)
     return _natijani_tayyorla(javob_matni)

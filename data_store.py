@@ -97,13 +97,18 @@ def tozalash(chat_id) -> int:
         return soni
 
 
-def fmt(n) -> str:
+def _son_qil(n) -> int:
+    """Har xil formatdagi summani songa aylantiradi ("4 000 so'm", "200\xa0000" ...)."""
+    s = str(n).replace("\xa0", "").replace(" ", "").replace(",", "")
+    s = s.replace("so'm", "").replace("so`m", "").replace("сум", "").strip()
     try:
-        son = int(float(str(n).replace("\xa0", "").replace(" ", "")
-                          .replace(",", "").replace("so'm", "").replace("so`m", "")))
+        return int(float(s))
     except (ValueError, TypeError):
-        son = 0
-    return f"{son:,}".replace(",", " ")
+        return 0
+
+
+def fmt(n) -> str:
+    return f"{_son_qil(n):,}".replace(",", " ")
 
 
 def stat_olish(chat_id) -> dict:
@@ -125,7 +130,7 @@ def stat_olish(chat_id) -> dict:
     for y in yozuvlar:
         try:
             sana = datetime.date.fromisoformat(str(y["sana"])[:10])
-            summa = int(float(str(y["summa"]).replace(" ", "").replace("so'm", "")))
+            summa = _son_qil(y["summa"])
         except (ValueError, KeyError, TypeError):
             continue
         if y["turi"] == "Daromad":
@@ -168,19 +173,39 @@ def balans_matni(chat_id) -> str:
         qatorlar.append("📊 Shu oy kategoriyalar bo'yicha:")
         qatorlar.extend(kat)
     return "\n".join(qatorlar)
-import datetime
-import json
-import os
-from collections import defaultdict
 
-import gspread
-from google.oauth2.service_account import Credentials
 
-SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
+# --- Til sozlamalari (har bir foydalanuvchi uchun: "uz" yoki "ru") ---
 
-TRANZAKSIYA_VARAQ = "Tranzaksiyalar"
-DASHBOARD_VARAQ = "Dashboard"
-SARLAVHALAR = ["Sana", "Vaqt", "Turi", "Kategoriya", "Summa", "Izoh", "Asl matn"]
+USERS_JSON = os.path.join(DATA_JILD, "users.json")
 
-_client = None
-_jadvallar = {}  # sheet_id -> gspread.Spreadsheet (kesh)
+DEFAULT_TIL = "uz"
+
+
+def _users_yukla() -> dict:
+    try:
+        with open(USERS_JSON, encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
+        return {}
+
+
+def _users_saqla(users: dict):
+    os.makedirs(DATA_JILD, exist_ok=True)
+    with open(USERS_JSON, "w", encoding="utf-8") as f:
+        json.dump(users, f, ensure_ascii=False, indent=2)
+
+
+def til_olish(chat_id) -> str:
+    til = _users_yukla().get(str(chat_id), {}).get("til", DEFAULT_TIL)
+    return til if til in ("uz", "ru") else DEFAULT_TIL
+
+
+def til_saqla(chat_id, til: str):
+    if til not in ("uz", "ru"):
+        til = DEFAULT_TIL
+    with _qulf:
+        users = _users_yukla()
+        users[str(chat_id)] = {"til": til}
+        _users_saqla(users)
+
