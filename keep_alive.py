@@ -43,6 +43,7 @@ D = {
         "sanagacha": "Sanagacha",
         "csv": "CSV",
         "yozuvlar_btn": "Yozuvlar",
+        "dashboard": "Dashboard",
         "orqaga": "Orqaga",
         "keyingi": "Keyingi",
         "oldingi": "Oldingi",
@@ -77,6 +78,7 @@ D = {
         "sanagacha": "По дату",
         "csv": "CSV",
         "yozuvlar_btn": "Записи",
+        "dashboard": "Обзор",
         "orqaga": "Назад",
         "keyingi": "Далее",
         "oldingi": "Назад",
@@ -134,6 +136,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Inter,sans-s
 .top-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .iconbtn{min-width:40px;height:40px;padding:0 12px;border-radius:12px;background:var(--card);border:1px solid var(--border);color:var(--text);font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:transform .15s,box-shadow .15s;text-decoration:none;font-weight:600;font-family:inherit}
 .iconbtn:hover{transform:translateY(-2px);box-shadow:var(--shadow)}
+.nav{display:flex;gap:8px;margin-bottom:16px;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:6px;box-shadow:var(--shadow)}
+.navi{flex:1;display:flex;align-items:center;justify-content:center;gap:8px;padding:10px 8px;border-radius:10px;font-size:14px;font-weight:700;color:var(--muted);text-decoration:none;transition:all .15s}
+.navi:hover{color:var(--text)}
+.navi.on{background:var(--grad);color:#fff;box-shadow:var(--shadow)}
+.navi .n-ico{font-size:16px}
+.flbl{font-size:12px;color:var(--muted);font-weight:600}
 .abtn{display:inline-flex;align-items:center;gap:8px;background:var(--grad);color:#fff;text-decoration:none;font-weight:700;font-size:13px;padding:10px 15px;border-radius:12px;box-shadow:var(--shadow);transition:transform .15s,opacity .15s;border:none;cursor:pointer;font-family:inherit}
 .abtn:hover{transform:translateY(-2px)}
 .kpi{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:16px}
@@ -212,6 +220,7 @@ const OY = {uz: @@OYUZ@@, ru: @@OYRU@@};
 let lang = localStorage.getItem('moliya_lang') || '@@DEFLANG@@';
 if(!T[lang]) lang = 'uz';
 let t = T[lang];
+let oy = OY[lang];
 const el = id => document.getElementById(id);
 const fmtS = n => String(n||0).replace(/\\B(?=(\\d{3})+(?!\\d))/g, ' ') + ' ' + t.som;
 
@@ -231,6 +240,7 @@ if(el('themeBtn')) el('themeBtn').onclick = () => {
 // --- Til ---
 function tilQoy(){
   t = T[lang];
+  oy = OY[lang];
   document.querySelectorAll('[data-t]').forEach(e => { e.textContent = T[lang][e.dataset.t] || e.textContent; });
   const b = el('langBtn'); if(b) b.textContent = lang === 'uz' ? '🇺🇿' : '🇷🇺';
   renderAll();
@@ -277,14 +287,18 @@ DASH_HTML = """<!doctype html>
   <div class="top">
     <div class="logo">
       <div class="mark">💰</div>
-      <h1><span class="appName">@@APP_NAME@@</span> Dashboard</h1>
+      <h1><span class="appName">@@APP_NAME@@</span></h1>
     </div>
     <div class="top-actions">
       <button class="iconbtn" id="langBtn">🇺🇿</button>
       <button class="iconbtn" id="themeBtn">🌙</button>
-      <a class="iconbtn" href="/u/@@CHAT_ID@@/yozuvlar">📋 <span data-t="yozuvlar_btn"></span></a>
       <a class="abtn" href="/u/@@CHAT_ID@@/csv">⬇ <span data-t="csv"></span></a>
     </div>
+  </div>
+
+  <div class="nav">
+    <a class="navi on" href="/u/@@CHAT_ID@@"><span class="n-ico">📊</span> <span data-t="dashboard"></span></a>
+    <a class="navi" href="/u/@@CHAT_ID@@/yozuvlar"><span class="n-ico">📋</span> <span data-t="yozuvlar_btn"></span></a>
   </div>
 
   <div class="card sec" style="margin-top:0">
@@ -293,9 +307,10 @@ DASH_HTML = """<!doctype html>
       <button class="chip" data-davr="oy" data-t="oy"></button>
       <button class="chip" data-davr="hafta" data-t="hafta"></button>
       <button class="chip" data-davr="bugun" data-t="bugun"></button>
-      <input class="chip" type="date" id="fromD" title="@@SANADAN@@">
-      <span style="color:var(--muted)">–</span>
-      <input class="chip" type="date" id="toD" title="@@SANAGACHA@@">
+      <span class="flbl" data-t="sanadan"></span>
+      <input class="chip" type="date" id="fromD">
+      <span class="flbl" data-t="sanagacha"></span>
+      <input class="chip" type="date" id="toD">
     </div>
   </div>
 
@@ -342,13 +357,18 @@ REC_HTML = """<!doctype html>
 <div class="wrap">
   <div class="top">
     <div class="logo">
-      <a class="iconbtn" href="/u/@@CHAT_ID@@">← <span data-t="orqaga"></span></a>
-      <h1>📋 <span class="appName">@@APP_NAME@@</span></h1>
+      <div class="mark">📋</div>
+      <h1><span class="appName">@@APP_NAME@@</span></h1>
     </div>
     <div class="top-actions">
       <button class="iconbtn" id="langBtn">🇺🇿</button>
       <button class="iconbtn" id="themeBtn">🌙</button>
     </div>
+  </div>
+
+  <div class="nav">
+    <a class="navi" href="/u/@@CHAT_ID@@"><span class="n-ico">📊</span> <span data-t="dashboard"></span></a>
+    <a class="navi on" href="/u/@@CHAT_ID@@/yozuvlar"><span class="n-ico">📋</span> <span data-t="yozuvlar_btn"></span></a>
   </div>
 
   <div class="card sec" style="margin-top:0">
@@ -357,9 +377,10 @@ REC_HTML = """<!doctype html>
       <button class="chip" data-davr="oy" data-t="oy"></button>
       <button class="chip" data-davr="hafta" data-t="hafta"></button>
       <button class="chip" data-davr="bugun" data-t="bugun"></button>
-      <input class="chip" type="date" id="fromD" title="@@SANADAN@@">
-      <span style="color:var(--muted)">–</span>
-      <input class="chip" type="date" id="toD" title="@@SANAGACHA@@">
+      <span class="flbl" data-t="sanadan"></span>
+      <input class="chip" type="date" id="fromD">
+      <span class="flbl" data-t="sanagacha"></span>
+      <input class="chip" type="date" id="toD">
       <button class="chip on" data-tur="hamma" data-t="hamma"></button>
       <button class="chip" data-tur="Daromad">🟢 <span data-t="daromad"></span></button>
       <button class="chip" data-tur="Harajat">🔴 <span data-t="harajat"></span></button>
@@ -470,8 +491,8 @@ function renderKat(){
   }).join('');
   requestAnimationFrame(()=>document.querySelectorAll('.barbg>div').forEach(d=>{ d.style.width = d.dataset.w + '%'; }));
 }
+function tilQoyStatik(){ document.querySelectorAll('[data-t]').forEach(e => { e.textContent = T[lang][e.dataset.t] || e.textContent; }); }
 function renderAll(){ tilQoyStatik(); renderKPI(); renderTrend(); renderDonut(); renderKat(); }
-function tilQoyStatik(){}
 el('filters').addEventListener('click', e=>{
   const b = e.target.closest('button.chip');
   if(!b) return;
@@ -483,7 +504,7 @@ el('filters').addEventListener('click', e=>{
 });
 el('fromD').onchange = e=>{ fFrom = e.target.value || null; el('filters').querySelectorAll('button.chip[data-davr]').forEach(x=>x.classList.remove('on')); renderAll(); };
 el('toD').onchange = e=>{ fTo = e.target.value || null; el('filters').querySelectorAll('button.chip[data-davr]').forEach(x=>x.classList.remove('on')); renderAll(); };
-renderAll();
+tilQoy();
 """# ============================ YOZUVLAR SAHIFASI JS ============================
 
 _JS_REC = """
@@ -538,8 +559,8 @@ function renderList(){
   el('prevBtn').style.visibility = bet > 1 ? 'visible' : 'hidden';
   el('nextBtn').style.visibility = bet < jamiBet ? 'visible' : 'hidden';
 }
+function tilQoyStatik(){ document.querySelectorAll('[data-t]').forEach(e => { e.textContent = T[lang][e.dataset.t] || e.textContent; }); }
 function renderAll(){ tilQoyStatik(); renderFiltrKat(); renderList(); }
-function tilQoyStatik(){}
 el('filters').addEventListener('click', e=>{
   const b = e.target.closest('button.chip');
   if(!b) return;
@@ -560,7 +581,7 @@ el('toD').onchange = e=>{ fTo = e.target.value || null; el('filters').querySelec
 el('selKat').onchange = e=>{ fKat = e.target.value; bet = 1; renderList(); };
 el('prevBtn').onclick = ()=>{ if(bet>1){ bet--; renderList(); window.scrollTo({top:0,behavior:'smooth'}); } };
 el('nextBtn').onclick = ()=>{ bet++; renderList(); window.scrollTo({top:0,behavior:'smooth'}); };
-renderAll();
+tilQoy();
 """# ============================ ROUTELAR ============================
 
 def _html_tayyorla(tmpl, chat_id, js_page) -> str:
