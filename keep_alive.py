@@ -41,6 +41,8 @@ D = {
         "barchasi": "Barcha davr",
         "sanadan": "Sanadan",
         "sanagacha": "Sanagacha",
+"filtr_davr": "Davr:",
+        "filtr_tur": "Tur:",
         "csv": "CSV",
         "yozuvlar_btn": "Yozuvlar",
         "dashboard": "Dashboard",
@@ -76,6 +78,8 @@ D = {
         "barchasi": "Всё время",
         "sanadan": "С даты",
         "sanagacha": "По дату",
+"filtr_davr": "Период:",
+        "filtr_tur": "Тип:",
         "csv": "CSV",
         "yozuvlar_btn": "Записи",
         "dashboard": "Обзор",
@@ -142,6 +146,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Inter,sans-s
 .navi.on{background:var(--grad);color:#fff;box-shadow:var(--shadow)}
 .navi .n-ico{font-size:16px}
 .flbl{font-size:12px;color:var(--muted);font-weight:600}
+.fgrp{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.fgrp+.fgrp{padding-left:12px;border-left:1px solid var(--border)}
+.mini-donut{width:20px;height:20px;border-radius:50%;background:conic-gradient(#6366f1 0 40%,#8b5cf6 40% 70%,#f59e0b 70% 100%);display:inline-block;box-shadow:inset 0 0 0 6px var(--card);vertical-align:-4px}
+.mini-donut.big{width:44px;height:44px;box-shadow:inset 0 0 0 13px var(--card)}
 .abtn{display:inline-flex;align-items:center;gap:8px;background:var(--grad);color:#fff;text-decoration:none;font-weight:700;font-size:13px;padding:10px 15px;border-radius:12px;box-shadow:var(--shadow);transition:transform .15s,opacity .15s;border:none;cursor:pointer;font-family:inherit}
 .abtn:hover{transform:translateY(-2px)}
 .kpi{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:16px}
@@ -303,13 +311,14 @@ DASH_HTML = """<!doctype html>
 
   <div class="card sec" style="margin-top:0">
     <div class="filters" id="filters" style="margin-bottom:0">
+      <div class="fgrp">
+      <span class="flbl" data-t="filtr_davr"></span>
       <button class="chip on" data-davr="barchasi" data-t="barchasi"></button>
       <button class="chip" data-davr="oy" data-t="oy"></button>
       <button class="chip" data-davr="hafta" data-t="hafta"></button>
       <button class="chip" data-davr="bugun" data-t="bugun"></button>
-      <span class="flbl" data-t="sanadan"></span>
       <input class="chip" type="date" id="fromD">
-      <span class="flbl" data-t="sanagacha"></span>
+      <span class="flbl">–</span>
       <input class="chip" type="date" id="toD">
     </div>
   </div>
@@ -326,7 +335,7 @@ DASH_HTML = """<!doctype html>
       </div>
     </div>
     <div class="card sec">
-      <h2>🍩 <span data-t="donut_title"></span></h2>
+      <h2><span class="mini-donut"></span> <span data-t="donut_title"></span></h2>
       <div class="donut-wrap" id="donutWrap"></div>
     </div>
   </div>
@@ -373,17 +382,24 @@ REC_HTML = """<!doctype html>
 
   <div class="card sec" style="margin-top:0">
     <div class="filters" id="filters" style="margin-bottom:0">
+      <div class="fgrp">
+      <span class="flbl" data-t="filtr_davr"></span>
       <button class="chip on" data-davr="barchasi" data-t="barchasi"></button>
       <button class="chip" data-davr="oy" data-t="oy"></button>
       <button class="chip" data-davr="hafta" data-t="hafta"></button>
       <button class="chip" data-davr="bugun" data-t="bugun"></button>
-      <span class="flbl" data-t="sanadan"></span>
       <input class="chip" type="date" id="fromD">
-      <span class="flbl" data-t="sanagacha"></span>
+      <span class="flbl">–</span>
       <input class="chip" type="date" id="toD">
+    </div>
+    <div class="fgrp">
+      <span class="flbl" data-t="filtr_tur"></span>
       <button class="chip on" data-tur="hamma" data-t="hamma"></button>
       <button class="chip" data-tur="Daromad">🟢 <span data-t="daromad"></span></button>
       <button class="chip" data-tur="Harajat">🔴 <span data-t="harajat"></span></button>
+    </div>
+    <div class="fgrp">
+      <span class="flbl" data-t="kat_filtr"></span>
       <select class="chip" id="selKat"></select>
     </div>
   </div>
@@ -448,7 +464,7 @@ function renderDonut(){
   Y.filter(y=>y.turi==='Harajat' && filtrQil(y)).forEach(y=>kat[y.kategoriya]=(kat[y.kategoriya]||0)+y.summa);
   const items = Object.entries(kat).sort((a,b)=>b[1]-a[1]);
   if(!items.length){
-    el('donutWrap').innerHTML = `<div class="empty"><div class="big">🍩</div>${t.donut_empty}</div>`;
+    el('donutWrap').innerHTML = `<div class="empty"><div class="big"><span class="mini-donut big"></span></div>${t.donut_empty}</div>`;
     return;
   }
   const jami = items.reduce((s,i)=>s+i[1],0);
@@ -513,7 +529,7 @@ const kategoriyalar = [...new Set(Y.map(y=>y.kategoriya))];
 let fTur = 'hamma', fKat = 'hamma', bet = 1;
 
 function renderFiltrKat(){
-  el('selKat').innerHTML = `<option value="hamma">${t.kat_filtr}: ${t.hamma}</option>` +
+  el('selKat').innerHTML = `<option value="hamma">${t.hamma}</option>` +
     kategoriyalar.map(k=>`<option value="${k}">${k}</option>`).join('');
   el('selKat').value = fKat;
 }
