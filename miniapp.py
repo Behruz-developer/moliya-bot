@@ -26,12 +26,16 @@ _support_cache = {"url": None, "vaqt": 0.0}
 
 
 def _bot_token() -> str:
-    return os.getenv("TELEGRAM_BOT_TOKEN", "")
+    return os.getenv("TELEGRAM_BOT_TOKEN", "").strip()
 
 
 def _initdanni_tekshir(init_data: str):
     """Telegram initData HMAC imzosini tekshiradi. OK bo'lsa user dict qaytaradi."""
-    if not init_data or not _bot_token():
+    if not init_data:
+        logger.info("MiniApp auth: initData bo'sh (eski Telegram versiyasi?)")
+        return None
+    if not _bot_token():
+        logger.info("MiniApp auth: TELEGRAM_BOT_TOKEN sozlanmagan")
         return None
     juftliklar = [p.split("=", 1) for p in init_data.split("&") if "=" in p]
     qiymatlar = {k: v for k, v in juftliklar if k != "hash"}
@@ -42,18 +46,21 @@ def _initdanni_tekshir(init_data: str):
     secret = hmac.new(b"WebAppData", _bot_token().encode(), hashlib.sha256).digest()
     hisob = hmac.new(secret, data_check.encode(), hashlib.sha256).hexdigest()
     if not hmac.compare_digest(hisob, hash_qs):
+        logger.info("MiniApp auth: hash mos emas (server tokeni boshqacha?)")
         return None
     try:
         auth_date = int(qiymatlar.get("auth_date", "0"))
     except ValueError:
         return None
     if auth_date < time.time() - _AUTH_MAX_YOSH:
+        logger.info("MiniApp auth: auth_date eskirgan")
         return None
     try:
         user = json.loads(urllib.parse.unquote(qiymatlar.get("user", "{}")))
     except json.JSONDecodeError:
         return None
     if not user.get("id"):
+        logger.info("MiniApp auth: user.id topilmadi")
         return None
     return user
 
