@@ -288,7 +288,16 @@ ru: {
   f_comment_ph: "Например: Yandex Go", save: "Сохранить", cancel: "Отмена",
   del_confirm: "Удалить эту операцию?", del_yes: "Удалить",
   saved: "Сохранено", deleted: "Удалено", err: "Ошибка — попробуйте снова",
-  auth_err: "Откройте приложение через Telegram", retry: "Обновить",
+  auth_err: "Откройте приложение через Telegram",
+  auth_err_x: "Это приложение работает только внутри Telegram.",
+  auth_old: "Обновите Telegram",
+  auth_old_x: "Ваш Telegram устарел — он не передаёт данные для входа (initData). Нажмите синюю кнопку «Обновить» в левом нижнем углу Telegram (или скачайте новую версию с telegram.org) и откройте приложение заново. Либо откройте его в Telegram на телефоне.",
+  auth_sig: "Вход не подтверждён",
+  auth_sig_x: "Подпись initData не совпала — проверьте TELEGRAM_BOT_TOKEN на сервере и откройте приложение заново.",
+  auth_exp: "Сессия устарела",
+  auth_exp_x: "Закройте приложение и откройте его заново.",
+  load_err: "Не удалось загрузить данные",
+  retry: "Обновить",
   months: ["января","февраля","марта","апреля","мая","июня","июля","августа","сентября","октября","ноября","декабря"],
   months_gen: ["января","февраля","марта","апреля","мая","июня","июля","августа","сентября","октября","ноября","декабря"],
 },
@@ -331,7 +340,16 @@ uz: {
   f_comment_ph: "Masalan: Yandex Go", save: "Saqlash", cancel: "Bekor qilish",
   del_confirm: "Bu operatsiyani o'chirilsinmi?", del_yes: "O'chirish",
   saved: "Saqlandi", deleted: "O'chirildi", err: "Xatolik — qaytadan urinib ko'ring",
-  auth_err: "Ilovani Telegram orqali oching", retry: "Yangilash",
+  auth_err: "Ilovani Telegram orqali oching",
+  auth_err_x: "Bu ilova faqat Telegram ichida ishlaydi.",
+  auth_old: "Telegram'ni yangilang",
+  auth_old_x: "Telegram versiyangiz eskirgan — u kirish ma'lumotlarini (initData) yubormaydi. Chap pastdagi ko'k «Yangilash» tugmasini bosing (yoki telegram.org'dan yangi versiyani o'rnatib), ilovani qayta oching. Telefondagi Telegram'da ham ochishingiz mumkin.",
+  auth_sig: "Kirish tasdiqlanmadi",
+  auth_sig_x: "initData imzosi mos kelmadi — serverdagi TELEGRAM_BOT_TOKEN'ni tekshirib, ilovani qayta oching.",
+  auth_exp: "Sessiya eskirgan",
+  auth_exp_x: "Ilovani yopib, qayta oching.",
+  load_err: "Ma'lumotlar yuklanmadi",
+  retry: "Yangilash",
   ref_month: "o'tgan oyga",
   months: ["yanvar","fevral","mart","aprel","may","iyun","iyul","avgust","sentabr","oktabr","noyabr","dekabr"],
   months_gen: ["yanvar","fevral","mart","aprel","may","iyun","iyul","avgust","sentabr","oktabr","noyabr","dekabr"],
@@ -440,7 +458,7 @@ async function api(url, method, body){
   if (body !== undefined){ opt.headers["Content-Type"] = "application/json"; opt.body = JSON.stringify(body); }
   const r = await fetch(url, opt);
   const d = await r.json().catch(()=>({}));
-  if (!r.ok) throw Object.assign(new Error(d.xato||"err"), {status:r.status});
+  if (!r.ok) throw Object.assign(new Error(d.xato||"err"), {status:r.status, sabab:d.sabab||""});
   return d;
 }
 
@@ -452,14 +470,34 @@ async function load(){
     document.documentElement.lang = S.lang;
     renderAll();
   }catch(e){
-    if (e.status === 401){ $("pg-home").innerHTML = authErrHtml(); $("tabbar").classList.add("hidden"); $("fabBtn").classList.add("hidden"); }
+    if (e.status === 401){
+      $("pg-home").innerHTML = authErrHtml(e.sabab || "");
+      $("tabbar").classList.add("hidden"); $("fabBtn").classList.add("hidden");
+    } else {
+      $("pg-home").innerHTML = errHtml();
+      $("tabbar").classList.add("hidden"); $("fabBtn").classList.add("hidden");
+    }
   }
 }
 
-function authErrHtml(){
+function authErrHtml(sabab){
+  sabab = sabab || "";
+  let key = "auth_err";
+  if (!tg) key = "auth_err";
+  else if (!tg.initData) key = "auth_old";
+  else if (sabab === "hash" || sabab === "token") key = "auth_sig";
+  else if (sabab === "eskirgan") key = "auth_exp";
+  return `<div class="empty" style="margin-top:16%">
+    ${ICONS.person}<b>${esc(t(key))}</b>
+    <p style="margin:10px 0 16px;font-size:13.5px;color:var(--tx2);line-height:1.5;max-width:320px;margin-left:auto;margin-right:auto">${esc(t(key+"_x"))}</p>
+    <button class="bigbtn" style="margin:0 auto;max-width:200px" onclick="location.reload()">${esc(t("retry"))}</button>
+    <p style="margin-top:18px;font-size:11px;color:#9B9BB4">debug: ${esc((tg&&tg.platform)||"no-tg")} · ${esc(sabab||"-")}</p>
+  </div>`;
+}
+function errHtml(){
   return `<div class="empty" style="margin-top:30%">
-    ${ICONS.person}<b>${esc(t("auth_err"))}</b>
-    <p style="margin:10px 0 16px">${esc(t("retry"))}</p>
+    ${ICONS.person}<b>${esc(t("load_err"))}</b>
+    <p style="margin:10px 0 16px">${esc(t("err"))}</p>
     <button class="bigbtn" style="margin:0 auto;max-width:200px" onclick="location.reload()">${esc(t("retry"))}</button>
   </div>`;
 }

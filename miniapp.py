@@ -13,7 +13,7 @@ import time
 import urllib.parse
 import urllib.request
 
-from flask import Response, jsonify, request
+from flask import Response, g, jsonify, request
 
 import data_store
 from categories import KATEGORIYALAR, kat_kalit
@@ -33,43 +33,49 @@ def _initdanni_tekshir(init_data: str):
     """Telegram initData HMAC imzosini tekshiradi. OK bo'lsa user dict qaytaradi."""
     if not init_data:
         logger.info("MiniApp auth: initData bo'sh (eski Telegram versiyasi?)")
-        return None
+        return None, "bosh"
     if not _bot_token():
         logger.info("MiniApp auth: TELEGRAM_BOT_TOKEN sozlanmagan")
-        return None
+        return None, "token"
     juftliklar = [p.split("=", 1) for p in init_data.split("&") if "=" in p]
     qiymatlar = {k: v for k, v in juftliklar if k != "hash"}
     hash_qs = next((v for k, v in juftliklar if k == "hash"), None)
     if not hash_qs:
-        return None
+        return None, "hash"
     data_check = "\n".join(f"{k}={qiymatlar[k]}" for k in sorted(qiymatlar))
     secret = hmac.new(b"WebAppData", _bot_token().encode(), hashlib.sha256).digest()
     hisob = hmac.new(secret, data_check.encode(), hashlib.sha256).hexdigest()
     if not hmac.compare_digest(hisob, hash_qs):
         logger.info("MiniApp auth: hash mos emas (server tokeni boshqacha?)")
-        return None
+        return None, "hash"
     try:
         auth_date = int(qiymatlar.get("auth_date", "0"))
     except ValueError:
-        return None
+        return None, "format"
     if auth_date < time.time() - _AUTH_MAX_YOSH:
         logger.info("MiniApp auth: auth_date eskirgan")
-        return None
+        return None, "eskirgan"
     try:
         user = json.loads(urllib.parse.unquote(qiymatlar.get("user", "{}")))
     except json.JSONDecodeError:
-        return None
+        return None, "user"
     if not user.get("id"):
         logger.info("MiniApp auth: user.id topilmadi")
-        return None
-    return user
+        return None, "user"
+    return user, ""
 
 
 def _userdan():
     """So'rov sarlavhasini (Authorization: tma <initData>) tekshiradi yoki None."""
     auth = request.headers.get("Authorization", "")
     init_data = auth[4:] if auth.startswith("tma ") else ""
-    return _initdanni_tekshir(init_data)
+    user, sabab = _initdanni_tekshir(init_data)
+    g.auth_sabab = sabab
+    return user
+
+
+def _auth_401():
+    return jsonify({"ok": False, "xato": "auth", "sabab": getattr(g, "auth_sabab", "")}), 401
 
 
 def _til(user) -> str:
@@ -155,14 +161,14 @@ def register(app):
     def api_me():
         user = _userdan()
         if not user:
-            return jsonify({"ok": False, "xato": "auth"}), 401
+            return _auth_401()
         return jsonify(_profil(user))
 
     @app.route("/api/settings", methods=["POST"])
     def api_settings():
         user = _userdan()
         if not user:
-            return jsonify({"ok": False, "xato": "auth"}), 401
+            return _auth_401()
         data = request.get_json(silent=True) or {}
         data_store.til_saqla(user["id"], data.get("til", ""))
         return jsonify({"ok": True, "lang": data_store.til_olish(user["id"])})
@@ -181,7 +187,7 @@ def register(app):
     def api_qosh():
         user = _userdan()
         if not user:
-            return jsonify({"ok": False, "xato": "auth"}), 401
+            return _auth_401()
         data = request.get_json(silent=True) or {}
         turi = data.get("turi")
         kalit = data.get("kategoriya")
@@ -207,7 +213,7 @@ def register(app):
     def api_tuzatish(yozuv_id):
         user = _userdan()
         if not user:
-            return jsonify({"ok": False, "xato": "auth"}), 401
+            return _auth_401()
         data = request.get_json(silent=True) or {}
         o_zgarishlar = {}
         if data.get("turi") in ("income", "expense"):
@@ -232,7 +238,7 @@ def register(app):
     def api_ochirish(yozuv_id):
         user = _userdan()
         if not user:
-            return jsonify({"ok": False, "xato": "auth"}), 401
+            return _auth_401()
         ok = data_store.yozuvni_ochirish_id(user["id"], yozuv_id)
         if not ok:
             return jsonify({"ok": False, "xato": "topilmadi"}), 404
