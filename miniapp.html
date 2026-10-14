@@ -1,0 +1,939 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Moliya</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F2F1F9; --card:#FFFFFF; --tx:#1F1F2E; --tx2:#9B9BB4; --acc:#6C5CE7; --acc2:#8B7CF7;
+  --grad:linear-gradient(133deg,#5B50D8 0%,#8B7CF7 100%);
+  --green:#2FBF71; --greenbg:#E8F8F1; --red:#FF6B6B; --redbg:#FDECEC;
+  --orange:#F5A623; --orangebg:#FDF3E3; --blue:#4D9FFF; --bluebg:#E9F3FF;
+  --purplebg:#EFECFF; --chip:#EFEFF6; --line:#F1F1F8;
+  --sh:0 10px 30px rgba(76,68,164,.07); --sh2:0 14px 34px rgba(76,68,164,.16);
+  --r:20px; --r2:14px;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{
+  font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+  background:var(--bg); color:var(--tx); font-size:15px; line-height:1.35;
+  -webkit-font-smoothing:antialiased; overscroll-behavior-y:contain;
+}
+#app{max-width:430px;margin:0 auto;padding:14px 16px 130px}
+.hdr{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin:8px 0 18px}
+.hdr .eyebrow{font-size:12px;color:var(--tx2);font-weight:500;margin-bottom:3px}
+.hdr h1{font-size:26px;font-weight:800;letter-spacing:-.5px}
+.bell{width:46px;height:46px;border-radius:16px;background:var(--card);border:none;display:flex;
+  align-items:center;justify-content:center;box-shadow:var(--sh);cursor:pointer;color:#4A4A63;flex:none}
+.bell svg{width:21px;height:21px}
+.card{background:var(--card);border-radius:var(--r);box-shadow:var(--sh);padding:18px;margin-bottom:14px}
+
+/* --- Binafsha gradient kartalar --- */
+.pcard{background:var(--grad);border-radius:24px;box-shadow:0 16px 34px rgba(91,80,216,.32);
+  color:#fff;padding:22px;position:relative;overflow:hidden;margin-bottom:14px}
+.pcard .lbl{font-size:13px;font-weight:500;color:rgba(255,255,255,.75)}
+.pcard .amt{font-size:32px;font-weight:800;letter-spacing:-.5px;margin-top:14px}
+.pcard .amt small{font-size:15px;font-weight:600;color:rgba(255,255,255,.85);margin-left:6px}
+.pcard .badge{display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,.18);
+  border-radius:20px;padding:5px 10px;font-size:12px;font-weight:700}
+.pcard .badge svg{width:12px;height:12px}
+.pcard .vs{font-size:12.5px;color:rgba(255,255,255,.72);margin-left:8px}
+.pcard .eye{position:absolute;top:18px;right:18px;width:40px;height:40px;border-radius:14px;
+  background:rgba(255,255,255,.16);border:none;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.pcard .eye svg{width:20px;height:20px;color:#fff}
+.pcard .up-arr{position:absolute;top:22px;right:22px;width:54px;height:54px;color:#fff;opacity:.95}
+.pcard .spark{position:absolute;left:0;right:0;bottom:0;height:74px;width:100%}
+.pcard .foot{display:flex;align-items:center;margin-top:16px;position:relative;z-index:2}
+.pcard .mini{padding:18px 20px}
+.pcard .mini .amt{font-size:24px;margin-top:8px}
+.pcard .mini .badge{margin-left:auto}
+
+/* --- Daromad/Xarajat kichik kartalar --- */
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
+.statc{background:var(--card);border-radius:var(--r);box-shadow:var(--sh);padding:14px;position:relative}
+.statc .ic{width:42px;height:42px;border-radius:14px;display:flex;align-items:center;justify-content:center;margin-bottom:12px}
+.statc .ic svg{width:19px;height:19px}
+.statc .lb{font-size:12.5px;color:var(--tx2);font-weight:500}
+.statc .vl{font-size:19px;font-weight:800;margin-top:3px}
+.statc .pc{position:absolute;top:16px;right:14px;font-size:12px;font-weight:700}
+.pc.up{color:var(--green)} .pc.down{color:var(--red)}
+
+/* --- Ro'yxat elementlari --- */
+.tlist{margin-top:6px}
+.titem{display:flex;align-items:center;gap:12px;padding:13px 0;position:relative;border-bottom:1px solid var(--line)}
+.titem:last-child{border-bottom:none}
+.titem .ic{width:46px;height:46px;border-radius:16px;display:flex;align-items:center;justify-content:center;flex:none}
+.titem .ic svg{width:21px;height:21px}
+.titem .mid{flex:1;min-width:0}
+.titem .nm{font-size:14.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.titem .sb{font-size:12px;color:var(--tx2);margin-top:2px}
+.titem .end{text-align:right}
+.titem .sm{font-size:13.5px;font-weight:700;white-space:nowrap}
+.titem .st{font-size:11px;color:var(--tx2);margin-top:3px}
+.titem .st.inc{color:var(--green)}
+.titem.swiped{background:#FBFAFF}
+.titem .amt-plus{color:var(--green)}
+
+/* --- Chip-lar --- */
+.chips{display:flex;gap:8px;align-items:center;overflow-x:auto;scrollbar-width:none;margin:14px 0 4px}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;border:none;background:var(--chip);color:#8A8FA3;font-size:13px;font-weight:600;
+  padding:9px 16px;border-radius:20px;cursor:pointer;font-family:inherit;transition:all .15s}
+.chip.on{background:var(--acc);color:#fff;box-shadow:0 6px 14px rgba(108,92,231,.35)}
+.fbtn{flex:none;width:36px;height:36px;border-radius:12px;background:var(--chip);border:none;
+  display:flex;align-items:center;justify-content:center;cursor:pointer;color:#6D7189;margin-left:2px}
+.fbtn svg{width:16px;height:16px}
+
+/* --- Analitika --- */
+.seg{display:flex;background:#EAE9F3;border-radius:16px;padding:4px;margin-bottom:14px}
+.seg button{flex:1;border:none;background:transparent;color:#8A8FA3;font-size:13.5px;font-weight:600;
+  padding:10px 0;border-radius:13px;cursor:pointer;font-family:inherit;transition:all .18s}
+.seg button.on{background:#fff;color:var(--tx);box-shadow:0 4px 12px rgba(76,68,164,.14)}
+.donut-wrap{display:flex;align-items:center;gap:18px;margin-top:16px}
+.donut{position:relative;width:148px;height:148px;flex:none}
+.donut svg{width:100%;height:100%;transform:rotate(-90deg)}
+.donut .ctr{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.donut .ctr b{font-size:18px;font-weight:800}
+.donut .ctr span{font-size:11.5px;color:var(--tx2)}
+.legend{flex:1;min-width:0}
+.legend .li{display:flex;align-items:center;gap:8px;padding:6px 0}
+.legend .dot{width:9px;height:9px;border-radius:50%;flex:none}
+.legend .ln{flex:1;font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.legend .lv{font-size:13px;font-weight:700}
+.insight{background:var(--purplebg);border-radius:var(--r);padding:16px;display:flex;gap:13px;
+  align-items:flex-start;margin-bottom:14px}
+.insight .ic{width:44px;height:44px;border-radius:14px;background:var(--acc);display:flex;
+  align-items:center;justify-content:center;flex:none}
+.insight .ic svg{width:20px;height:20px;color:#fff}
+.insight b{font-size:14px;font-weight:700;display:block}
+.insight p{font-size:13px;color:#7A76B5;margin-top:4px}
+.card .chead{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:4px}
+.card .chead .tt{font-size:16px;font-weight:700}
+.card .chead .sb2{font-size:12.5px;color:var(--tx2);margin-top:2px}
+.ibtn{width:40px;height:40px;border-radius:14px;background:var(--purplebg);border:none;color:var(--acc);
+  display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none}
+.ibtn svg{width:18px;height:18px}
+.bigbtn{width:100%;border:none;background:#EDEBFB;color:var(--acc);font-size:14px;font-weight:700;
+  padding:15px;border-radius:var(--r2);cursor:pointer;font-family:inherit;margin-top:14px}
+
+/* --- Operatsiyalar --- */
+.search{display:flex;align-items:center;gap:10px;background:var(--card);border-radius:var(--r2);
+  padding:13px 16px;box-shadow:var(--sh);margin-bottom:12px}
+.search svg{width:17px;height:17px;color:var(--tx2);flex:none}
+.search input{flex:1;border:none;outline:none;background:transparent;font-family:inherit;
+  font-size:14px;color:var(--tx)}
+.search input::placeholder{color:#B4B4C8}
+.dayh{display:flex;align-items:baseline;justify-content:space-between;margin:18px 4px 2px}
+.dayh .d{font-size:15.5px;font-weight:700}
+.dayh .n{font-size:12px;color:var(--tx2)}
+
+/* --- Profil --- */
+.pcard .prow{display:flex;align-items:center;gap:14px}
+.avatar{width:52px;height:52px;border-radius:18px;background:rgba(255,255,255,.2);
+  display:flex;align-items:center;justify-content:center;font-weight:800;font-size:17px;flex:none;overflow:hidden}
+.avatar img{width:100%;height:100%;object-fit:cover}
+.stats3{display:flex;background:var(--card);border-radius:var(--r);box-shadow:var(--sh);
+  padding:16px 6px;margin-bottom:14px}
+.stats3 .c{flex:1;text-align:center;padding:0 4px}
+.stats3 .c + .c{border-left:1px solid var(--line)}
+.stats3 .v{font-size:17px;font-weight:800}
+.stats3 .l{font-size:12px;color:var(--tx2);margin-top:3px}
+.menu .mrow{display:flex;align-items:center;gap:13px;padding:12px 0;cursor:pointer;border-bottom:1px solid var(--line)}
+.menu .mrow:last-child{border-bottom:none}
+.menu .mic{width:42px;height:42px;border-radius:14px;background:var(--purplebg);color:var(--acc);
+  display:flex;align-items:center;justify-content:center;flex:none}
+.menu .mic svg{width:19px;height:19px}
+.menu .mt{flex:1}
+.menu .mt b{font-size:14.5px;font-weight:600;display:block}
+.menu .mt span{font-size:12px;color:var(--tx2);margin-top:2px;display:block}
+.menu .chev{color:#C6C6D6;width:18px;height:18px;flex:none}
+.ver{text-align:center;color:#B4B4C8;font-size:12.5px;margin:16px 0 4px}
+
+/* --- Pastki navigatsiya + FAB --- */
+.tabbar{position:fixed;left:14px;right:14px;bottom:calc(10px + env(safe-area-inset-bottom));
+  background:var(--card);border-radius:26px;box-shadow:var(--sh2);display:flex;
+  padding:10px 6px 12px;z-index:40}
+.tab{flex:1;border:none;background:transparent;display:flex;flex-direction:column;align-items:center;
+  gap:3px;color:#A7A8BD;cursor:pointer;font-family:inherit;padding:2px 0}
+.tab svg{width:22px;height:22px}
+.tab span{font-size:11px;font-weight:600}
+.tab .dot{width:4px;height:4px;border-radius:50%;background:transparent;margin-top:1px}
+.tab.on{color:var(--acc)}
+.tab.on .dot{background:var(--acc)}
+.fab{position:fixed;right:18px;bottom:calc(92px + env(safe-area-inset-bottom));width:54px;height:54px;
+  border-radius:19px;background:var(--grad);border:none;color:#fff;box-shadow:0 12px 26px rgba(91,80,216,.45);
+  font-size:26px;font-weight:400;z-index:40;cursor:pointer;display:flex;align-items:center;justify-content:center}
+
+/* --- Bottom sheet / overlay / toast --- */
+.overlay{position:fixed;inset:0;background:rgba(22,18,52,.45);z-index:60;opacity:0;pointer-events:none;transition:opacity .22s}
+.overlay.show{opacity:1;pointer-events:auto}
+.sheet{position:fixed;left:10px;right:10px;bottom:0;background:var(--card);
+  border-radius:24px 24px 0 0;padding:14px 20px calc(22px + env(safe-area-inset-bottom));
+  z-index:70;transform:translateY(105%);transition:transform .26s cubic-bezier(.3,.8,.35,1);max-height:88%;overflow-y:auto}
+.sheet.show{transform:translateY(0)}
+.sheet .grab{width:38px;height:4px;border-radius:4px;background:#E3E3EE;margin:0 auto 14px}
+.sheet h3{font-size:17px;font-weight:800;margin-bottom:4px}
+.sheet .sub{font-size:13px;color:var(--tx2);margin-bottom:14px}
+.srow{display:flex;align-items:center;gap:13px;padding:14px 2px;border-bottom:1px solid var(--line);cursor:pointer}
+.srow:last-child{border-bottom:none}
+.srow svg{width:20px;height:20px}
+.srow.danger,.srow.danger svg{color:var(--red)}
+.srow b{flex:1;font-size:15px;font-weight:600}
+.form{margin-top:8px}
+.form label{font-size:12.5px;color:var(--tx2);font-weight:600;display:block;margin:14px 0 7px}
+.form label:first-child{margin-top:4px}
+.form input[type=text],.form input[type=number],.form input[type=date]{width:100%;border:1.5px solid #E7E7F1;
+  background:#FAFAFE;border-radius:var(--r2);padding:13px 14px;font-family:inherit;font-size:15px;color:var(--tx);outline:none}
+.form input:focus{border-color:var(--acc2)}
+.tsel{display:flex;gap:8px}
+.tsel button{flex:1;border:1.5px solid #E7E7F1;background:#FAFAFE;border-radius:var(--r2);padding:11px;
+  font-family:inherit;font-size:13.5px;font-weight:700;cursor:pointer;color:#8A8FA3}
+.tsel button.on.exp{background:var(--redbg);border-color:var(--red);color:var(--red)}
+.tsel button.on.inc{background:var(--greenbg);border-color:var(--green);color:var(--green)}
+.kgrid{display:flex;flex-wrap:wrap;gap:8px}
+.kgrid button{border:1.5px solid #E7E7F1;background:#FAFAFE;border-radius:18px;padding:8px 13px;
+  font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;color:#5B5B77;display:flex;align-items:center;gap:6px}
+.kgrid button.on{background:var(--purplebg);border-color:var(--acc);color:var(--acc)}
+.kgrid svg{width:14px;height:14px}
+.formbtns{display:flex;gap:10px;margin-top:20px}
+.formbtns .save{flex:1;border:none;background:var(--acc);color:#fff;font-family:inherit;font-size:14.5px;
+  font-weight:700;padding:14px;border-radius:var(--r2);cursor:pointer}
+.formbtns .del{flex:1;border:none;background:var(--redbg);color:var(--red);font-family:inherit;
+  font-size:14.5px;font-weight:700;padding:14px;border-radius:var(--r2);cursor:pointer}
+.formbtns .cancel{flex:1;border:none;background:#EFEFF6;color:#6D7189;font-family:inherit;font-size:14.5px;
+  font-weight:700;padding:14px;border-radius:var(--r2);cursor:pointer}
+.langopt{display:flex;align-items:center;justify-content:space-between;padding:14px 2px;
+  border-bottom:1px solid var(--line);cursor:pointer}
+.langopt:last-child{border-bottom:none}
+.langopt b{font-size:15px;font-weight:600}
+.langopt .sel{width:22px;height:22px;border-radius:50%;background:var(--acc);display:none;
+  align-items:center;justify-content:center;color:#fff}
+.langopt.on .sel{display:flex}
+.langopt .sel svg{width:12px;height:12px}
+.empty{padding:34px 10px;text-align:center;color:var(--tx2)}
+.empty svg{width:52px;height:52px;color:#D8D8E6;margin-bottom:12px}
+.empty b{font-size:15px;color:var(--tx);display:block;margin-bottom:5px}
+.empty p{font-size:13px}
+.toast{position:fixed;left:50%;transform:translateX(-50%) translateY(20px);bottom:calc(110px + env(safe-area-inset-bottom));
+  background:#2B2B3D;color:#fff;font-size:13.5px;font-weight:600;padding:11px 20px;border-radius:16px;
+  opacity:0;pointer-events:none;transition:all .25s;z-index:90;white-space:nowrap}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.pagesec{display:none}
+.pagesec.on{display:block}
+.pagehead{display:flex;align-items:flex-start;justify-content:space-between}
+.pagetl .eyebrow{font-size:12px;color:var(--tx2);font-weight:500;margin-bottom:3px}
+.pagetl h1{font-size:26px;font-weight:800;letter-spacing:-.5px}
+.hidden{display:none!important}
+</style>
+</head>
+
+<body>
+<div id="app">
+  <section class="pagesec on" id="pg-home"></section>
+  <section class="pagesec" id="pg-analytics"></section>
+  <section class="pagesec" id="pg-ops"></section>
+  <section class="pagesec" id="pg-profile"></section>
+</div>
+<button class="fab" id="fabBtn">+</button>
+<nav class="tabbar" id="tabbar"></nav>
+<div class="overlay" id="overlay"></div>
+<div class="sheet" id="sheet"></div>
+<div class="toast" id="toast"></div>
+<script>
+"use strict";
+/* ============================ I18N (ru / uz) ============================ */
+const I18N = {
+ru: {
+  som: "сум", mln: "млн", ming: "тыс.",
+  welcome: "Добро пожаловать",
+  total_balance: "Общий баланс", vs_prev: "по сравнению с прошлым месяцем",
+  income: "Доходы", expense: "Расходы",
+  recent: "Последние транзакции", recent_sub: "Сумма, время и категория",
+  show_all: "Показать всю историю",
+  all: "Все", incomes: "Доходы", expenses: "Расходы",
+  nav_home: "Главная", nav_analytics: "Аналитика", nav_ops: "Операции", nav_profile: "Профиль",
+  a_eyebrow: "Обзор финансов", a_title: "Аналитика",
+  week: "Неделя", month: "Месяц", year: "Год",
+  a_bal: "Баланс за период", growth: "рост", decline: "снижение",
+  donut_title: "Расходы по категориям", donut_sub: "Всего {s}", donut_empty: "Нет расходов за период",
+  expenses_word: "расходов",
+  ins_down: "Ваши расходы снизились на {p}%", ins_down_sub: "Вы потратили на {d} сум меньше, чем {ref}.",
+  ins_up: "Ваши расходы выросли на {p}%", ins_up_sub: "Вы потратили на {d} сум больше, чем {ref}.",
+  ref_week: "на прошлой неделе", ref_year: "в прошлом году",
+  o_eyebrow: "Полная история операций", o_title: "Транзакции",
+  search_ph: "Поиск по названию или категории",
+  month_income: "Доходы в этом месяце", month_expense: "Расходы в этом месяце",
+  today: "Сегодня", yesterday: "Вчера",
+  n_ops: "{n} операций", n_ops1: "1 операция", n_ops2: "{n} операции",
+  st_credit: "Зачислено", st_done: "Выполнено",
+  p_eyebrow: "Личные настройки", p_title: "Профиль",
+  st_ops: "операции", st_cats: "категории", st_days: "с нами",
+  d_days: "дн.", d_months: "мес.", d_years: "года", d_years1: "год", d_years5: "лет",
+  m_settings: "Настройки приложения", m_settings_sub: "Язык, тема и уведомления",
+  m_history: "История операций", m_history_sub: "Все доходы и расходы",
+  m_support: "Помощь и поддержка", m_support_sub: "Частые вопросы и чат",
+  version: "Версия приложения 1.0.0",
+  lang_title: "Язык", lang_saved: "Язык сохранён",
+  notif_title: "Нет уведомлений", notif_sub: "Здесь пока пусто — уведомления появятся здесь.",
+  act_title: "Операция", act_edit: "Изменить", act_delete: "Удалить",
+  add_title: "Новая операция", edit_title: "Изменить операцию",
+  f_type: "Тип", f_expense: "Расход", f_income: "Доход", f_amount: "Сумма",
+  f_cat: "Категория", f_comment: "Комментарий", f_date: "Дата",
+  f_comment_ph: "Например: Yandex Go", save: "Сохранить", cancel: "Отмена",
+  del_confirm: "Удалить эту операцию?", del_yes: "Удалить",
+  saved: "Сохранено", deleted: "Удалено", err: "Ошибка — попробуйте снова",
+  auth_err: "Откройте приложение через Telegram", retry: "Обновить",
+  months: ["января","февраля","марта","апреля","мая","июня","июля","августа","сентября","октября","ноября","декабря"],
+  months_gen: ["января","февраля","марта","апреля","мая","июня","июля","августа","сентября","октября","ноября","декабря"],
+},
+uz: {
+  som: "so'm", mln: "mln", ming: "ming",
+  welcome: "Xush kelibsiz",
+  total_balance: "Umumiy balans", vs_prev: "o'tgan oyga nisbatan",
+  income: "Daromadlar", expense: "Xarajatlar",
+  recent: "Oxirgi tranzaksiyalar", recent_sub: "Summa, vaqt va kategoriya",
+  show_all: "To'liq tarixni ko'rsatish",
+  all: "Hammasi", incomes: "Daromadlar", expenses: "Xarajatlar",
+  nav_home: "Asosiy", nav_analytics: "Tahlil", nav_ops: "Operatsiyalar", nav_profile: "Profil",
+  a_eyebrow: "Moliyaviy ko'rsatkichlar", a_title: "Tahlil",
+  week: "Hafta", month: "Oy", year: "Yil",
+  a_bal: "Davr balansi", growth: "o'sish", decline: "pasayish",
+  donut_title: "Kategoriyalar bo'yicha xarajatlar", donut_sub: "Jami {s}", donut_empty: "Davr uchun xarajat yo'q",
+  expenses_word: "xarajat",
+  ins_down: "Xarajatlaringiz {p}% ga kamaydi", ins_down_sub: "Siz {ref} qaraganda {d} so'm kam sarfladingiz.",
+  ins_up: "Xarajatlaringiz {p}% ga oshdi", ins_up_sub: "Siz {ref} qaraganda {d} so'm ko'p sarfladingiz.",
+  ref_week: "o'tgan haftaga", ref_year: "o'tgan yilga",
+  o_eyebrow: "To'liq operatsiyalar tarixi", o_title: "Tranzaksiyalar",
+  search_ph: "Nomi yoki kategoriyasi bo'yicha qidirish",
+  month_income: "Bu oy daromadlar", month_expense: "Bu oy xarajatlar",
+  today: "Bugun", yesterday: "Kecha",
+  n_ops: "{n} operatsiya", n_ops1: "1 operatsiya", n_ops2: "{n} operatsiya",
+  st_credit: "Kirim qilindi", st_done: "Bajarildi",
+  p_eyebrow: "Shaxsiy sozlamalar", p_title: "Profil",
+  st_ops: "operatsiya", st_cats: "kategoriyalar", st_days: "biz bilan",
+  d_days: "kun", d_months: "oy", d_years: "yil", d_years1: "yil", d_years5: "yil",
+  m_settings: "Ilova sozlamalari", m_settings_sub: "Til, mavzu va bildirishnomalar",
+  m_history: "Operatsiyalar tarixi", m_history_sub: "Barcha daromad va xarajatlar",
+  m_support: "Yordam va qo'llab-quvvatlash", m_support_sub: "Ko'p so'raladigan savollar va chat",
+  version: "Ilova versiyasi 1.0.0",
+  lang_title: "Til", lang_saved: "Til saqlandi",
+  notif_title: "Bildirishnomalar yo'q", notif_sub: "Bu yerda hozircha bo'sh — bildirishnomalar shu yerda paydo bo'ladi.",
+  act_title: "Operatsiya", act_edit: "Tahrirlash", act_delete: "O'chirish",
+  add_title: "Yangi operatsiya", edit_title: "Operatsiyani tahrirlash",
+  f_type: "Turi", f_expense: "Xarajat", f_income: "Daromad", f_amount: "Summa",
+  f_cat: "Kategoriya", f_comment: "Izoh", f_date: "Sana",
+  f_comment_ph: "Masalan: Yandex Go", save: "Saqlash", cancel: "Bekor qilish",
+  del_confirm: "Bu operatsiyani o'chirilsinmi?", del_yes: "O'chirish",
+  saved: "Saqlandi", deleted: "O'chirildi", err: "Xatolik — qaytadan urinib ko'ring",
+  auth_err: "Ilovani Telegram orqali oching", retry: "Yangilash",
+  ref_month: "o'tgan oyga",
+  months: ["yanvar","fevral","mart","aprel","may","iyun","iyul","avgust","sentabr","oktabr","noyabr","dekabr"],
+  months_gen: ["yanvar","fevral","mart","aprel","may","iyun","iyul","avgust","sentabr","oktabr","noyabr","dekabr"],
+},
+};
+const SUPPORT_URL = "@@SUPPORT_URL@@";
+
+/* ============================ SVG IKONLAR ============================ */
+const SV = (p, extra) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${p}${extra||""}</svg>`;
+const ICONS = {
+  bell: SV('<path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/>'),
+  eye: SV('<path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/>'),
+  eyeoff: SV('<path d="M17.94 17.94A10.9 10.9 0 0 1 12 20c-7 0-11-8-11-8a19.8 19.8 0 0 1 5.06-5.94M9.9 4.24A9.9 9.9 0 0 1 12 4c7 0 11 8 11 8a19.8 19.8 0 0 1-3.22 4.31"/><path d="M1 1l22 22"/>'),
+  search: SV('<circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/>'),
+  funnel: SV('<path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z"/>'),
+  arrUp: SV('<path d="M7 17L17 7"/><path d="M8 7h9v9"/>'),
+  arrDown: SV('<path d="M17 7L7 17"/><path d="M16 17H7V8"/>'),
+  home: SV('<path d="M3 10.5L12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/><path d="M9 21v-6h6v6"/>'),
+  chart: SV('<path d="M6 20V10"/><path d="M12 20V4"/><path d="M18 20v-7"/><path d="M2 20h20"/>'),
+  list: SV('<path d="M8 6h13"/><path d="M8 12h13"/><path d="M8 18h13"/><path d="M3 6h.01"/><path d="M3 12h.01"/><path d="M3 18h.01"/>'),
+  person: SV('<circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 5-5.5 8-5.5s6.5 1.5 8 5.5"/>'),
+  chev: SV('<path d="M9 6l6 6-6 6"/>'),
+  calendar: SV('<rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4"/><path d="M16 3v4"/><path d="M3 11h18"/>'),
+  bars: SV('<path d="M6 20V10"/><path d="M12 20V4"/><path d="M18 20v-7"/>'),
+  gear: SV('<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1 1.55V21a2 2 0 1 1-4 0v-.09a1.7 1.7 0 0 0-1-1.55 1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.55-1H3a2 2 0 1 1 0-4h.09a1.7 1.7 0 0 0 1.55-1 1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-1.55V3a2 2 0 1 1 4 0v.09a1.7 1.7 0 0 0 1 1.55 1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.34 1.87v.08a1.7 1.7 0 0 0 1.55 1H21a2 2 0 1 1 0 4h-.09a1.7 1.7 0 0 0-1.55 1z"/>'),
+  help: SV('<circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3"/><path d="M12 17h.01"/>'),
+  close: SV('<path d="M18 6L6 18"/><path d="M6 6l12 12"/>'),
+  check: SV('<path d="M20 6L9 17l-5-5"/>'),
+  trash: SV('<path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/>'),
+  pencil: SV('<path d="M17 3a2.8 2.8 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/>'),
+  plus: SV('<path d="M12 5v14"/><path d="M5 12h14"/>'),
+  // kategoriya ikonlari
+  cart: SV('<circle cx="9" cy="21" r="1.6"/><circle cx="19" cy="21" r="1.6"/><path d="M2 3h3l2.7 12.4a2 2 0 0 0 2 1.6h9.7a2 2 0 0 0 2-1.6L23 7H6"/>'),
+  car: SV('<path d="M5 11l1.5-4.5A2 2 0 0 1 8.4 5h7.2a2 2 0 0 1 1.9 1.5L19 11"/><rect x="3" y="11" width="18" height="7" rx="2"/><circle cx="7.5" cy="18" r="2"/><circle cx="16.5" cy="18" r="2"/>'),
+  bag: SV('<path d="M6 8h12l1 13H5L6 8z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/>'),
+  cup: SV('<path d="M18 8h3a2.5 2.5 0 0 1 0 5h-3"/><path d="M3 8h15v7a5 5 0 0 1-5 5H8a5 5 0 0 1-5-5V8z"/><path d="M7 2v2.5"/><path d="M11 2v2.5"/>'),
+  briefcase: SV('<rect x="2" y="7" width="20" height="14" rx="3"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M2 13h20"/>'),
+  gift: SV('<rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13"/><path d="M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7"/><path d="M12 8c-2 0-4.5-1-4.5-3A2 2 0 0 1 12 4a2 2 0 0 1 4.5 1c0 2-2.5 3-4.5 3z"/>'),
+  laptop: SV('<rect x="3" y="4" width="18" height="12" rx="2"/><path d="M2 20h20"/>'),
+  homec: SV('<path d="M3 10.5L12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/>'),
+  heart: SV('<path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/>'),
+  book: SV('<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>'),
+  game: SV('<rect x="2" y="7" width="20" height="12" rx="5"/><path d="M7 11v4"/><path d="M5 13h4"/><path d="M16 11.5h.01"/><path d="M18.5 14h.01"/>'),
+  card: SV('<rect x="2" y="5" width="20" height="14" rx="3"/><path d="M2 10h20"/>'),
+  dots: SV('<circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/>'),
+};
+const CAT_ICON_FALLBACK = ICONS.dots;
+function catIcon(key){ return ICONS[(S.cats[key]||{}).icon] || CAT_ICON_FALLBACK; }
+function catColor(key){ return (S.cats[key]||{}).color || "#B8B5E3"; }
+function catName(key){ const c=S.cats[key]; return c ? (S.lang==="ru"?c.ru:c.uz) : key; }
+function catKeys(type){ return Object.keys(S.cats).filter(k=>(S.cats[k].tur==="daromad") === (type==="income")); }
+
+/* ============================ HOLAT + API ============================ */
+const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
+let S = {
+  lang: "ru", user: null, tx: [], cats: {}, hid: false,
+  period: "month", homeType: "all", opsType: "all", opsCat: "all",
+  homeQ: "", opsQ: "", editId: null, formType: "expense",
+};
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+function t(key){ return (I18N[S.lang] && I18N[S.lang][key]) ?? I18N.ru[key] ?? key; }
+function tpl(key, vars){
+  let s = t(key);
+  for (const k in (vars||{})) s = s.replace("{"+k+"}", vars[k]);
+  return s;
+}
+function haptic(kind){ try{ tg && tg.HapticFeedback && (kind==="ok" ? tg.HapticFeedback.notificationOccurred("success") : tg.HapticFeedback.impactOccurred(kind||"light")); }catch(e){} }
+
+/* --- Summalar --- */
+function fmt(n){ return Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g," "); }
+function short(n){
+  n = Math.abs(Math.round(n));
+  if (n >= 1e6){ let v = n/1e6; v = Math.round(v*10)/10;
+    return (v % 1 === 0 ? v.toFixed(0) : v.toFixed(1).replace(".",",")) + " " + t("mln"); }
+  if (n >= 1e3) return Math.round(n/1e3) + " " + t("ming");
+  return fmt(n);
+}
+function fmtSigned(x){ return (x > 0 ? "+" : x < 0 ? "-" : "") + fmt(Math.abs(x)); }
+
+/* --- Sanalar --- */
+function dstr(d){ const dt = new Date(d+"T00:00:00"); return dt; }
+function todayStr(){ const d = new Date(); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
+function addDays(s, n){ const d = dstr(s); d.setDate(d.getDate()+n); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
+function dayLabel(s){
+  const b = todayStr();
+  if (s === b) return t("today");
+  if (s === addDays(b, -1)) return t("yesterday");
+  const dt = dstr(s);
+  return dt.getDate() + (S.lang==="ru" ? " " : "-") + t("months")[dt.getMonth()];
+}
+function monthName(i){ return t("months")[i]; }
+
+/* --- Sana oralig'i --- */
+function periodRange(p){
+  const b = todayStr(); const d = dstr(b);
+  if (p === "week") return [addDays(b,-6), b];
+  if (p === "year") return [b.slice(0,4)+"-01-01", b];
+  return [new Date(d.getFullYear(), d.getMonth(), 1).getFullYear()+"-"+String(new Date(d.getFullYear(), d.getMonth(), 1).getMonth()+1).padStart(2,"0")+"-01", b];
+}
+function prevRange(p){ const [a] = periodRange(p); const len = Math.round((dstr(periodRange(p)[1]) - dstr(a))/86400000)+1; return [addDays(a, -len), addDays(a,-1)]; }
+
+async function api(url, method, body){
+  const auth = tg && tg.initData ? tg.initData : "";
+  const opt = { method, headers: { "Authorization": "tma " + auth } };
+  if (body !== undefined){ opt.headers["Content-Type"] = "application/json"; opt.body = JSON.stringify(body); }
+  const r = await fetch(url, opt);
+  const d = await r.json().catch(()=>({}));
+  if (!r.ok) throw Object.assign(new Error(d.xato||"err"), {status:r.status});
+  return d;
+}
+
+async function load(){
+  try{
+    const d = await api("/api/me", "POST", {});
+    S.lang = d.lang; S.user = d.user; S.tx = d.yozuvlar || [];
+    S.cats = d.kategoriyalar || {};
+    document.documentElement.lang = S.lang;
+    renderAll();
+  }catch(e){
+    if (e.status === 401){ $("pg-home").innerHTML = authErrHtml(); $("tabbar").classList.add("hidden"); $("fabBtn").classList.add("hidden"); }
+  }
+}
+
+function authErrHtml(){
+  return `<div class="empty" style="margin-top:30%">
+    ${ICONS.person}<b>${esc(t("auth_err"))}</b>
+    <p style="margin:10px 0 16px">${esc(t("retry"))}</p>
+    <button class="bigbtn" style="margin:0 auto;max-width:200px" onclick="location.reload()">${esc(t("retry"))}</button>
+  </div>`;
+}
+
+/* --- Hisob-kitob yordamchilari --- */
+function sumOf(list){ return list.reduce((a,y)=>a+y.summa,0); }
+function pctChange(cur, prev){
+  if (!prev) return null;
+  return Math.round((cur - prev) / Math.abs(prev) * 1000) / 10;
+}
+function txIn(a, b){ return S.tx.filter(y => y.sana >= a && y.sana <= b); }
+function inPeriod(p){ const [a,b] = periodRange(p); return txIn(a,b); }
+function inPrevPeriod(p){ const [a,b] = prevRange(p); return txIn(a,b); }
+function catNameTitle(y){ return y.izoh || catName(y.kategoriya); }
+function catSub(y){
+  const kun = dayLabel(y.sana);
+  return catName(y.kategoriya) + " • " + kun + ", " + y.vaqt;
+}
+function statusOf(y){ return y.turi === "income" ? [t("st_credit"), "inc"] : [t("st_done"), ""]; }
+
+/* ============================ EKRAN: HOME ============================ */
+function tItem(y){
+  const [st, cls] = statusOf(y);
+  const plus = y.turi === "income";
+  return `<div class="titem" data-id="${y.id}">
+    <div class="ic" style="background:${catColor(y.kategoriya)}22;color:${catColor(y.kategoriya)}">${catIcon(y.kategoriya)}</div>
+    <div class="mid"><div class="nm">${esc(catNameTitle(y))}</div><div class="sb">${esc(catSub(y))}</div></div>
+    <div class="end"><div class="sm ${plus?"amt-plus":""}">${plus?"+":"−"}${fmt(y.summa)} ${t("som")}</div><div class="st ${cls}">${st}</div></div>
+  </div>`;
+}
+function renderHome(){
+  const u = S.user || {};
+  const ini = (u.ism || "?").split(" ").map(w=>w[0]).slice(0,2).join("").toUpperCase();
+  const bal = sumOf(S.tx.filter(y=>y.turi==="income")) - sumOf(S.tx.filter(y=>y.turi==="expense"));
+  const cur = inPeriod("month"), prev = inPrevPeriod("month");
+  const inc = sumOf(cur.filter(y=>y.turi==="income")), incP = sumOf(prev.filter(y=>y.turi==="income"));
+  const exp = sumOf(cur.filter(y=>y.turi==="expense")), expP = sumOf(prev.filter(y=>y.turi==="expense"));
+  const balPct = pctChange(inc - exp, incP - expP);
+  const incPct = pctChange(inc, incP), expPct = pctChange(exp, expP);
+  const hide = S.hid;
+  $("pg-home").innerHTML = `
+    <div class="hdr">
+      <div style="display:flex;align-items:center;gap:12px">
+        <div class="avatar" style="background:var(--grad);color:#fff">${esc(ini)}</div>
+        <div><div class="eyebrow">${esc(t("welcome"))}</div><div style="font-size:16px;font-weight:700">${esc(u.ism||"")}</div></div>
+      </div>
+      <button class="bell" onclick="openNotif()">${ICONS.bell}</button>
+    </div>
+    <div class="pcard">
+      <div class="lbl">${esc(t("total_balance"))}</div>
+      <button class="eye" onclick="toggleEye()">${hide?ICONS.eyeoff:ICONS.eye}</button>
+      <div class="amt">${hide?"••••••":fmt(bal)}<small>${t("som")}</small></div>
+      <div class="foot">
+        <span class="badge">${balPct===null?"" :(balPct>=0?ICONS.arrUp:ICONS.arrDown)} ${hide?"":(balPct===null?"—":Math.abs(balPct)+"%")}</span>
+        <span class="vs">${esc(t("vs_prev"))}</span>
+      </div>
+    </div>
+    <div class="row2">
+      <div class="statc">
+        <div class="ic" style="background:var(--greenbg);color:var(--green)">${ICONS.arrDown}</div>
+        <div class="lb">${esc(t("income"))}</div><div class="vl">${hide?"•••":short(inc)}</div>
+        <span class="pc ${incPct!==null&&incPct>=0?"up":"down"}">${incPct===null?"—":(incPct>=0?"+":"")+incPct+"%"}</span>
+      </div>
+      <div class="statc">
+        <div class="ic" style="background:var(--redbg);color:var(--red)">${ICONS.arrUp}</div>
+        <div class="lb">${esc(t("expense"))}</div><div class="vl">${hide?"•••":short(exp)}</div>
+        <span class="pc ${expPct!==null&&expPct<=0?"down":"up"}">${expPct===null?"—":(expPct>=0?"+":"")+expPct+"%"}</span>
+      </div>
+    </div>
+    <div class="card">
+      <div class="chead">
+        <div><div class="tt">${esc(t("recent"))}</div><div class="sb2">${esc(t("recent_sub"))}</div></div>
+        <button class="ibtn" style="background:var(--chip);color:#6D7189" onclick="go('ops',true)">${ICONS.search}</button>
+      </div>
+      <div class="chips" id="hChips">${chipHtml("hType")}</div>
+      <div class="tlist" id="hList">${homeListHtml()}</div>
+      <button class="bigbtn" onclick="go('ops')">${esc(t("show_all"))}</button>
+    </div>`;
+  bindChips($("hChips"), "homeType", renderHome);
+  bindLongPress($("hList"));
+}
+function chipHtml(which){
+  const cur = which==="hType" ? S.homeType : S.opsType;
+  const opts = [["all",t("all")],["income",t("incomes")],["expense",t("expenses")]];
+  return opts.map(([v,l])=>`<button class="chip ${cur===v?"on":""}" data-v="${v}">${esc(l)}</button>`).join("");
+}
+function bindChips(box, key, redraw){
+  box.querySelectorAll("button.chip").forEach(b=>{
+    b.onclick = () => { S[key] = b.dataset.v; haptic("light"); redraw(); };
+  });
+}
+function homeListHtml(){
+  let list = S.tx.slice();
+  if (S.homeType !== "all") list = list.filter(y=>y.turi===S.homeType);
+  if (S.homeQ) list = list.filter(y=>(catNameTitle(y)+" "+catName(y.kategoriya)).toLowerCase().includes(S.homeQ.toLowerCase()));
+  return list.slice(0,4).map(tItem).join("") || `<div class="empty" style="padding:20px">${esc(t("recent_sub"))}</div>`;
+}
+function toggleEye(){ S.hid = !S.hid; haptic("light"); renderHome(); }
+
+/* ============================ EKRAN: OPERATSIYALAR ============================ */
+function renderOps(){
+  const bal = sumOf(S.tx.filter(y=>y.turi==="income")) - sumOf(S.tx.filter(y=>y.turi==="expense"));
+  const [ma, mb] = periodRange("month");
+  const mInc = sumOf(S.tx.filter(y=>y.turi==="income" && y.sana>=ma && y.sana<=mb));
+  const mExp = sumOf(S.tx.filter(y=>y.turi==="expense" && y.sana>=ma && y.sana<=mb));
+  const balPct = pctChange(mInc - mExp, (()=>{ const [pa,pb]=prevRange("month"); return sumOf(S.tx.filter(y=>y.turi==="income"&&y.sana>=pa&&y.sana<=pb))-sumOf(S.tx.filter(y=>y.turi==="expense"&&y.sana>=pa&&y.sana<=pb)); })());
+  const cats = Object.keys(S.cats).filter(k=>S.tx.some(y=>y.kategoriya===k));
+  let list = S.tx.slice();
+  if (S.opsType !== "all") list = list.filter(y=>y.turi===S.opsType);
+  if (S.opsCat !== "all") list = list.filter(y=>y.kategoriya===S.opsCat);
+  if (S.opsQ) list = list.filter(y=>(catNameTitle(y)+" "+catName(y.kategoriya)).toLowerCase().includes(S.opsQ.toLowerCase()));
+  const days = {};
+  list.forEach(y => { (days[y.sana] = days[y.sana] || []).push(y); });
+  const groups = Object.keys(days).sort().reverse().map(s => {
+    const n = days[s].length;
+    const nl = n===1 ? tpl("n_ops1") : (S.lang==="ru" && n%10>=2 && n%10<=4 && (n<12||n>14) ? tpl("n_ops2",{n}) : tpl("n_ops",{n}));
+    return `<div class="dayh"><div class="d">${esc(dayLabel(s))}</div><div class="n">${esc(nl)}</div></div>
+      <div class="card"><div class="tlist">${days[s].map(tItem).join("")}</div></div>`;
+  }).join("");
+  $("pg-ops").innerHTML = `
+    <div class="hdr">
+      <div class="pagetl"><div class="eyebrow">${esc(t("o_eyebrow"))}</div><h1>${esc(t("o_title"))}</h1></div>
+      <button class="bell" onclick="openNotif()">${ICONS.bell}</button>
+    </div>
+    <div class="pcard mini">
+      <div class="lbl">${esc(t("total_balance"))}</div>
+      <div style="display:flex;align-items:center">
+        <div class="amt">${fmt(bal)}<small>${t("som")}</small></div>
+        <span class="badge">${balPct===null?"":(balPct>=0?ICONS.arrUp:ICONS.arrDown)} ${balPct===null?"—":Math.abs(balPct)+"%"}</span>
+      </div>
+    </div>
+    <div class="search">${ICONS.search}<input id="opsQ" type="text" placeholder="${esc(t("search_ph"))}" value="${esc(S.opsQ)}"></div>
+    <div class="chips" id="opsChips">
+      ${chipHtml("opsType")}
+      ${cats.map(k=>`<button class="chip ${S.opsCat===k?"on":""}" data-cat="${k}">${esc(catName(k))}</button>`).join("")}
+    </div>
+    <div class="row2">
+      <div class="statc">
+        <div class="ic" style="background:var(--greenbg);color:var(--green)">${ICONS.arrDown}</div>
+        <div class="lb">${esc(t("month_income"))}</div><div class="vl">${short(mInc)}</div>
+      </div>
+      <div class="statc">
+        <div class="ic" style="background:var(--redbg);color:var(--red)">${ICONS.arrUp}</div>
+        <div class="lb">${esc(t("month_expense"))}</div><div class="vl">${short(mExp)}</div>
+      </div>
+    </div>
+    <div id="opsGroups">${groups || `<div class="card"><div class="empty">${ICONS.list}<b>${esc(t("recent"))}</b><p>${esc(t("recent_sub"))}</p></div></div>`}</div>`;
+  $("opsQ").oninput = e => { S.opsQ = e.target.value.trim(); renderOps(); $("opsQ").focus(); };
+  $("opsChips").querySelectorAll("button.chip").forEach(b=>{
+    b.onclick = () => { haptic("light");
+      if (b.dataset.cat){ S.opsCat = S.opsCat===b.dataset.cat ? "all" : b.dataset.cat; }
+      else { S.opsType = b.dataset.v; }
+      renderOps(); };
+  });
+  bindLongPress($("opsGroups"));
+}
+
+/* ============================ EKRAN: ANALITIKA ============================ */
+function sparkPath(vals, w, h){
+  if (vals.length < 2) return "";
+  const max = Math.max(...vals), min = Math.min(...vals), rng = (max-min)||1;
+  const pts = vals.map((v,i)=>[i/(vals.length-1)*w, h-4-((v-min)/rng)*(h-12)]);
+  let d = `M${pts[0][0].toFixed(1)},${pts[0][1].toFixed(1)}`;
+  for (let i=1;i<pts.length;i++){
+    const [x1,y1] = pts[i-1], [x2,y2] = pts[i];
+    const mx = ((x1+x2)/2).toFixed(1);
+    d += ` C${mx},${y1.toFixed(1)} ${mx},${y2.toFixed(1)} ${x2.toFixed(1)},${y2.toFixed(1)}`;
+  }
+  return d;
+}
+function donutData(p){
+  const list = inPeriod(p).filter(y=>y.turi==="expense");
+  const by = {};
+  list.forEach(y=>{ by[y.kategoriya] = (by[y.kategoriya]||0)+y.summa; });
+  let arr = Object.entries(by).map(([k,v])=>({k, v})).sort((a,b)=>b.v-a.v);
+  if (arr.length > 4){ const rest = sumOf(arr.slice(4)); arr = arr.slice(0,4); arr.push({k:"other_expense", v:rest, other:true}); }
+  return arr;
+}
+function renderAnalytics(){
+  const p = S.period;
+  const [a,b] = periodRange(p);
+  const cur = inPeriod(p), prev = inPrevPeriod(p);
+  const bal = sumOf(cur.filter(y=>y.turi==="income")) - sumOf(cur.filter(y=>y.turi==="expense"));
+  const balP = sumOf(prev.filter(y=>y.turi==="income")) - sumOf(prev.filter(y=>y.turi==="expense"));
+  const pct = pctChange(bal, balP);
+  // sparkline: davr ichidagi kumulyativ balans
+  const daysN = Math.round((dstr(b)-dstr(a))/86400000)+1;
+  const step = daysN>70 ? "month" : "day";
+  const pts = []; let run = 0;
+  if (step === "day"){ const map={}; cur.forEach(y=>map[y.sana]=(map[y.sana]||0)+(y.turi==="income"?y.summa:-y.summa));
+    for(let i=0;i<daysN;i++){ run += map[addDays(a,i)]||0; pts.push(run); } }
+  else { const map={}; cur.forEach(y=>{ const k=y.sana.slice(0,7); map[k]=(map[k]||0)+(y.turi==="income"?y.summa:-y.summa); });
+    for(let i=0;i<12;i++){ const k=a.slice(0,4)+"-"+String(i+1).padStart(2,"0"); if (k<=b.slice(0,7)) { run += map[k]||0; pts.push(run); } } }
+  const segs = donutData(p);
+  const total = sumOf(segs.map(s=>s.v));
+  let off = 0; const R = 62, C = 2*Math.PI*R;
+  const arcs = segs.map(s=>{
+    const frac = total? s.v/total : 0;
+    const arc = `<circle r="${R}" cx="74" cy="74" fill="none" stroke="${catColor(s.k)}" stroke-width="17"
+      stroke-dasharray="${(frac*C-2).toFixed(1)} ${(C-frac*C+2).toFixed(1)}" stroke-dashoffset="${(-off*C).toFixed(1)}" stroke-linecap="round"/>`;
+    off += frac; return arc;
+  }).join("");
+  // insight
+  const e = sumOf(cur.filter(y=>y.turi==="expense")), eP = sumOf(prev.filter(y=>y.turi==="expense"));
+  const dPct = pctChange(e, eP);
+  let ins = "";
+  if (eP > 0 && dPct !== null && dPct !== 0){
+    const down = dPct < 0;
+    let ref = p==="week" ? t("ref_week") : p==="year" ? t("ref_year") : (S.lang==="ru" ? "в " + t("months_gen")[dstr(prevRange("month")[1]).getMonth()] : t("ref_month"));
+    ins = `<div class="insight"><div class="ic">${ICONS.bars}</div><div>
+      <b>${esc(tpl(down?"ins_down":"ins_up",{p:Math.abs(dPct)}))}</b>
+      <p>${esc(tpl(down?"ins_down_sub":"ins_up_sub",{d:fmt(Math.abs(e-eP)), ref}))}</p></div></div>`;
+  }
+  $("pg-analytics").innerHTML = `
+    <div class="hdr">
+      <div class="pagetl"><div class="eyebrow">${esc(t("a_eyebrow"))}</div><h1>${esc(t("a_title"))}</h1></div>
+      <button class="bell" onclick="openNotif()">${ICONS.bell}</button>
+    </div>
+    <div class="seg" id="segP">${["week","month","year"].map(v=>`<button data-p="${v}" class="${p===v?"on":""}">${esc(t(v))}</button>`).join("")}</div>
+    <div class="pcard" style="min-height:210px">
+      <div class="lbl">${esc(t("a_bal"))}</div>
+      <div style="position:relative;z-index:2">
+        <div class="amt">${(bal>=0?"+":"−")+fmt(Math.abs(bal))}<small>${t("som")}</small></div>
+        <div style="margin-top:10px;font-size:12.5px;color:rgba(255,255,255,.72)">
+          ${pct===null?"":(Math.abs(pct)+"% "+(pct>=0?t("growth"):t("decline")))}</div>
+      </div>
+      <svg class="up-arr" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/></svg>
+      <svg class="spark" viewBox="0 0 320 74" preserveAspectRatio="none">
+        <path d="${sparkPath(pts,320,74)} L320,74 L0,74 Z" fill="rgba(255,255,255,.10)"/>
+        <path d="${sparkPath(pts,320,74)}" stroke="#fff" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <div class="card">
+      <div class="chead">
+        <div><div class="tt">${esc(t("donut_title"))}</div><div class="sb2">${esc(tpl("donut_sub",{s:fmt(total)+" "+t("som")}))}</div></div>
+        <button class="ibtn" onclick="openPeriodSheet()">${ICONS.calendar}</button>
+      </div>
+      ${total ? `<div class="donut-wrap">
+        <div class="donut"><svg>${arcs}</svg>
+          <div class="ctr"><b>${short(total)}</b><span>${esc(t("expenses_word"))}</span></div></div>
+        <div class="legend">${segs.map(s=>`<div class="li"><span class="dot" style="background:${catColor(s.k)}"></span>
+          <span class="ln">${esc(catName(s.k))}</span><span class="lv">${fmt(s.v)}</span></div>`).join("")}</div>
+      </div>` : `<div class="empty" style="padding:24px">${esc(t("donut_empty"))}</div>`}
+    </div>
+    ${ins}`;
+  $("segP").querySelectorAll("button").forEach(b=>{
+    b.onclick = () => { S.period = b.dataset.p; haptic("light"); renderAnalytics(); };
+  });
+}
+
+/* ============================ EKRAN: PROFIL ============================ */
+function renderProfile(){
+  const u = S.user || {};
+  const ini = (u.ism || "?").split(" ").map(w=>w[0]).slice(0,2).join("").toUpperCase();
+  const nOps = S.tx.length;
+  const nCats = new Set(S.tx.map(y=>y.kategoriya)).size;
+  let dSub = "—", dVal = "0";
+  if (S.tx.length){
+    const birinchi = S.tx.reduce((m,y)=> y.sana < m ? y.sana : m, S.tx[0].sana);
+    const kun = Math.max(1, Math.round((new Date() - dstr(birinchi))/86400000) + 1);
+    dVal = kun < 60 ? kun + "" : kun < 730 ? Math.round(kun/30) + "" : Math.round(kun/365) + "";
+    dSub = kun < 60 ? t("d_days") : kun < 730 ? t("d_months") : (S.lang==="ru" ? (Math.round(kun/365)===1 ? t("d_years1") : Math.round(kun/365)%10>=2&&Math.round(kun/365)%10<=4&&(Math.round(kun/365)<12||Math.round(kun/365)>14) ? t("d_years") : t("d_years5")) : t("d_years"));
+  }
+  const av = u.photo ? `<img src="${esc(u.photo)}" alt="" referrerpolicy="no-referrer">` : esc(ini);
+  $("pg-profile").innerHTML = `
+    <div class="hdr">
+      <div class="pagetl"><div class="eyebrow">${esc(t("p_eyebrow"))}</div><h1>${esc(t("p_title"))}</h1></div>
+      <button class="bell" onclick="openNotif()">${ICONS.bell}</button>
+    </div>
+    <div class="pcard"><div class="prow">
+      <div class="avatar">${av}</div>
+      <div><div style="font-size:17px;font-weight:700">${esc(u.ism||"")}</div>
+        <div style="font-size:12.5px;color:rgba(255,255,255,.7);margin-top:3px">${u.username ? "@"+esc(u.username) : "#" + (u.id||"")}</div></div>
+    </div></div>
+    <div class="stats3">
+      <div class="c"><div class="v">${nOps}</div><div class="l">${esc(t("st_ops"))}</div></div>
+      <div class="c"><div class="v">${nCats}</div><div class="l">${esc(t("st_cats"))}</div></div>
+      <div class="c"><div class="v">${esc(dVal)}</div><div class="l">${esc(dSub)}</div></div>
+    </div>
+    <div class="card menu">
+      <div class="mrow" onclick="openLangSheet()">
+        <div class="mic">${ICONS.gear}</div>
+        <div class="mt"><b>${esc(t("m_settings"))}</b><span>${esc(t("m_settings_sub"))}</span></div>
+        <span class="chev">${ICONS.chev}</span>
+      </div>
+      <div class="mrow" onclick="go('ops')">
+        <div class="mic">${ICONS.list}</div>
+        <div class="mt"><b>${esc(t("m_history"))}</b><span>${esc(t("m_history_sub"))}</span></div>
+        <span class="chev">${ICONS.chev}</span>
+      </div>
+      <div class="mrow" onclick="openSupport()">
+        <div class="mic">${ICONS.help}</div>
+        <div class="mt"><b>${esc(t("m_support"))}</b><span>${esc(t("m_support_sub"))}</span></div>
+        <span class="chev">${ICONS.chev}</span>
+      </div>
+    </div>
+    <div class="ver">${esc(t("version"))}</div>`;
+}
+
+/* ============================ SHEET-LAR, FORMALAR ============================ */
+let sheetOpen = false;
+function showSheet(html){
+  $("sheet").innerHTML = `<div class="grab"></div>` + html;
+  $("overlay").classList.add("show");
+  $("sheet").classList.add("show");
+  sheetOpen = true;
+  try{ tg && tg.BackButton && tg.BackButton.show(); }catch(e){}
+}
+function closeSheet(){
+  $("overlay").classList.remove("show");
+  $("sheet").classList.remove("show");
+  sheetOpen = false;
+  try{ tg && tg.BackButton && tg.BackButton.hide(); }catch(e){}
+}
+function toast(msg){
+  const el = $("toast"); el.textContent = msg; el.classList.add("show");
+  clearTimeout(el._tm); el._tm = setTimeout(()=>el.classList.remove("show"), 1800);
+}
+function openNotif(){
+  haptic("light");
+  showSheet(`<h3>${esc(t("notif_title"))}</h3>
+    <div class="empty" style="padding:24px 0">${ICONS.bell}<b>${esc(t("notif_title"))}</b><p>${esc(t("notif_sub"))}</p></div>`);
+}
+function openPeriodSheet(){
+  haptic("light");
+  showSheet(`<h3>${esc(t("a_title"))}</h3>
+    <div>${["week","month","year"].map(v=>`<div class="langopt ${S.period===v?"on":""}" onclick="S.period='${v}';closeSheet();renderAnalytics()">
+      <b>${esc(t(v))}</b><span class="sel">${ICONS.check}</span></div>`).join("")}</div>`);
+}
+function openLangSheet(){
+  haptic("light");
+  showSheet(`<h3>${esc(t("lang_title"))}</h3>
+    <div>${[["ru","🇷🇺 Русский"],["uz","🇺🇿 O'zbekcha"]].map(([v,l])=>`<div class="langopt ${S.lang===v?"on":""}" onclick="setLang('${v}')">
+      <b>${esc(l)}</b><span class="sel">${ICONS.check}</span></div>`).join("")}</div>`);
+}
+async function setLang(v){
+  S.lang = v; haptic("ok"); closeSheet();
+  try{ await api("/api/settings","POST",{til:v}); }catch(e){}
+  toast(t("lang_saved")); renderAll();
+}
+function openSupport(){ try{ tg && tg.openTelegramLink ? tg.openTelegramLink(SUPPORT_URL) : window.open(SUPPORT_URL,"_blank"); }catch(e){} }
+
+/* --- Uzoq bosish / swipe -> action sheet --- */
+function bindLongPress(box){
+  if (!box) return;
+  let tmr = null, sx = 0, target = null;
+  box.addEventListener("touchstart", e => {
+    const it = e.target.closest(".titem"); if (!it) return;
+    target = it; sx = e.touches[0].clientX;
+    tmr = setTimeout(() => { tmr = null; haptic("medium"); openAction(target.dataset.id); }, 450);
+  }, {passive:true});
+  box.addEventListener("touchmove", e => {
+    if (tmr && Math.abs(e.touches[0].clientX - sx) > 40){ clearTimeout(tmr); tmr = null; }
+  }, {passive:true});
+  box.addEventListener("touchend", () => { if (tmr){ clearTimeout(tmr); tmr = null; } });
+  box.addEventListener("contextmenu", e => {
+    const it = e.target.closest(".titem");
+    if (it){ e.preventDefault(); openAction(it.dataset.id); }
+  });
+}
+function openAction(id){
+  const y = S.tx.find(x=>x.id===id); if (!y) return;
+  showSheet(`<h3>${esc(t("act_title"))}</h3>
+    <div class="sub">${esc(catNameTitle(y))} • ${esc(fmt(y.summa)+" "+t("som"))}</div>
+    <div class="srow" onclick="openEdit('${id}')"><span style="color:var(--acc)">${ICONS.pencil}</span><b>${esc(t("act_edit"))}</b></div>
+    <div class="srow danger" onclick="askDelete('${id}')">${ICONS.trash}<b>${esc(t("act_delete"))}</b></div>`);
+}
+function askDelete(id){
+  showSheet(`<h3>${esc(t("del_confirm"))}</h3>
+    <div class="formbtns">
+      <button class="cancel" onclick="closeSheet()">${esc(t("cancel"))}</button>
+      <button class="del" onclick="doDelete('${id}')">${esc(t("del_yes"))}</button>
+    </div>`);
+}
+async function doDelete(id){
+  try{ await api("/api/transactions/"+id, "DELETE"); haptic("ok"); closeSheet();
+    S.tx = S.tx.filter(x=>x.id!==id); toast(t("deleted")); renderAll();
+  }catch(e){ toast(t("err")); }
+}
+
+/* --- Forma: qo'shish / tahrirlash --- */
+function openForm(id){
+  const y = id ? S.tx.find(x=>x.id===id) : null;
+  S.editId = id || null;
+  S.formType = y ? y.turi : "expense";
+  const fType = y ? y.turi : "expense";
+  const kat = y ? y.kategoriya : (fType==="expense" ? "groceries" : "salary");
+  const sana = y ? y.sana : todayStr();
+  showSheet(`<h3>${esc(id?t("edit_title"):t("add_title"))}</h3>
+    <div class="form">
+      <label>${esc(t("f_type"))}</label>
+      <div class="tsel">
+        <button id="ftExp" class="${S.formType==="expense"?"on exp":""}">${esc(t("f_expense"))}</button>
+        <button id="ftInc" class="${S.formType==="income"?"on inc":""}">${esc(t("f_income"))}</button>
+      </div>
+      <label>${esc(t("f_amount"))}</label>
+      <input id="fAmt" type="number" inputmode="numeric" min="0" placeholder="0" value="${y?y.summa:""}">
+      <label>${esc(t("f_cat"))}</label>
+      <div class="kgrid" id="fCats"></div>
+      <label>${esc(t("f_comment"))}</label>
+      <input id="fIzoh" type="text" maxlength="60" placeholder="${esc(t("f_comment_ph"))}" value="${esc(y?y.izoh:"")}">
+      <label>${esc(t("f_date"))}</label>
+      <input id="fSana" type="date" value="${sana}">
+    </div>
+    <div class="formbtns">
+      ${id?`<button class="cancel" onclick="openAction('${id}')">${esc(t("cancel"))}</button>
+           <button class="save" onclick="saveForm()">${esc(t("save"))}</button>`
+          :`<button class="cancel" onclick="closeSheet()">${esc(t("cancel"))}</button>
+           <button class="save" onclick="saveForm()">${esc(t("save"))}</button>`}
+    </div>`);
+  let selKat = kat;
+  const drawCats = () => {
+    $("fCats").innerHTML = catKeys(S.formType).map(k=>
+      `<button class="${selKat===k?"on":""}" data-k="${k}">${catIcon(k)} ${esc(catName(k))}</button>`).join("");
+    $("fCats").querySelectorAll("button").forEach(b=>{ b.onclick = () => { selKat = b.dataset.k; haptic("light"); drawCats(); }; });
+  };
+  $("ftExp").onclick = () => { S.formType="expense"; selKat="groceries"; haptic("light"); formTypeUi(); drawCats(); };
+  $("ftInc").onclick = () => { S.formType="income"; selKat="salary"; haptic("light"); formTypeUi(); drawCats(); };
+  function formTypeUi(){
+    $("ftExp").className = S.formType==="expense" ? "on exp" : "";
+    $("ftInc").className = S.formType==="income" ? "on inc" : "";
+  }
+  drawCats();
+  S._selKat = () => selKat;
+}
+async function saveForm(){
+  const summa = Math.round(parseFloat($("fAmt").value || "0"));
+  if (!summa || summa <= 0){ toast(t("err")); return; }
+  const payload = {
+    turi: S.formType,
+    kategoriya: S._selKat ? S._selKat() : null,
+    summa,
+    izoh: $("fIzoh").value.trim(),
+    sana: $("fSana").value || todayStr(),
+  };
+  try{
+    if (S.editId) await api("/api/transactions/"+S.editId, "PATCH", payload);
+    else await api("/api/transactions", "POST", payload);
+    haptic("ok"); closeSheet(); toast(t("saved")); await load();
+  }catch(e){ toast(t("err")); }
+}
+
+/* ============================ TABLAR + ISHGA TUSHIRISH ============================ */
+const TABS = [["home","nav_home","home"],["analytics","nav_analytics","chart"],["ops","nav_ops","list"],["profile","nav_profile","person"]];
+let curTab = "home";
+function renderTabbar(){
+  $("tabbar").innerHTML = TABS.map(([id,lk,ic])=>
+    `<button class="tab ${curTab===id?"on":""}" data-t="${id}">${ICONS[ic]}<span>${esc(t(lk))}</span><span class="dot"></span></button>`).join("");
+  $("tabbar").querySelectorAll(".tab").forEach(b=>{ b.onclick = () => go(b.dataset.t); });
+}
+function go(tab, focusQ){
+  curTab = tab; haptic("light");
+  document.querySelectorAll(".pagesec").forEach(s=>s.classList.remove("on"));
+  $("pg-"+tab).classList.add("on");
+  renderTabbar();
+  if (tab === "home") renderHome();
+  if (tab === "analytics") renderAnalytics();
+  if (tab === "ops"){ renderOps(); if (focusQ){ const q=$("opsQ"); if (q) setTimeout(()=>q.focus(), 60); } }
+  if (tab === "profile") renderProfile();
+  window.scrollTo({top:0});
+}
+function renderAll(){ renderTabbar(); go(curTab); }
+try{
+  if (tg){
+    tg.ready(); tg.expand();
+    tg.setHeaderColor && tg.setHeaderColor("#F2F1F9");
+    tg.setBackgroundColor && tg.setBackgroundColor("#F2F1F9");
+    if (tg.BackButton) tg.BackButton.onClick(() => { if (sheetOpen) closeSheet(); });
+    tg.disableVerticalSwipes && tg.disableVerticalSwipes();
+  }
+}catch(e){}
+$("overlay").onclick = () => { if (sheetOpen) closeSheet(); };
+$("fabBtn").onclick = () => { haptic("medium"); openForm(null); };
+load();
+</script>
+</body>
+</html>

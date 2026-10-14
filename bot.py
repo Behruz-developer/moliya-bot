@@ -18,7 +18,15 @@ import tempfile
 import logging
 
 from dotenv import load_dotenv
-from telegram import Update, ReplyKeyboardMarkup, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import (
+    Update,
+    ReplyKeyboardMarkup,
+    InlineKeyboardButton,
+    InlineKeyboardMarkup,
+    KeyboardButton,
+    MenuButtonWebApp,
+    WebAppInfo,
+)
 from telegram.ext import (
     Application,
     CommandHandler,
@@ -40,6 +48,9 @@ logger = logging.getLogger(__name__)
 
 # --- Har bir foydalanuvchiga alohida shaxsiy sahifa (Google Sheets kerak emas!) ---
 BASE_URL = os.getenv("PUBLIC_URL", os.getenv("RENDER_EXTERNAL_URL", "http://localhost:10000")).rstrip("/")
+
+
+MINIAPP_URL = f"{BASE_URL}/app"
 
 
 def _sahifa_link(chat_id) -> str:
@@ -67,7 +78,7 @@ T = {
             "🕓 /oxirgi — oxirgi 5 yozuv (o'chirish/tuzatish)\n"
             "📥 /eksport — CSV fayl\n"
             "🧹 /tozalash — barcha yozuvlarni o'chirish\n"
-            "🔗 /sahifa — shaxsiy sahifa linki\n"
+            "🔗 /sahifa — moliya ilovasini ochish\n"
             "🌐 /til — tilni o'zgartirish\n\n"
             "💡 Pastdagi menyudan ham xuddi shu amallarni bajarish mumkin. Yaxshi kuzatishlar! 💰"
         ),
@@ -129,17 +140,16 @@ T = {
         "tuzatish_bekor_ok": "❌ Tuzatish bekor qilindi.",
         "tuzatish_xato": "❌ Tuzatishda xatolik yuz berdi. Qaytadan urinib ko'ring yoki /tuzatish_bekor.",
         "sahifa_xabar": (
-            "🔗 Sizning shaxsiy sahifangiz:\n{link}\n\n"
-            "Sahifada: balans, kategoriyalar, barcha yozuvlar va "
-            "CSV yuklab olish tugmasi bor.\n\n"
-            "🔗 Linkni saqlab qo'ying — istalgan qurilmada ochiladi."
+            "📊 Sizning shaxsiy moliya ilovangiz — balans, tahlil va "
+            "barcha yozuvlar bir joyda:"
         ),
-        "sahifa_tugma": "📊 Sahifamni ochish",
+        "sahifa_tugma": "📊 Ilovani ochish",
+        "hisobot_tugma": "📊 Hisobotni ko'rish",
         "menyu_balans": "📊 Balansni ko'rish",
         "menyu_oxirgi": "🕓 Oxirgi yozuvlar",
         "menyu_fayl": "📥 Ma'lumotlarni faylda olish",
         "menyu_tozalash": "🧹 Barcha yozuvlarni tozalash",
-        "menyu_sahifa": "🔗 Shaxsiy sahifam",
+        "menyu_app": "📊 Moliya ilovasi",
         "menyu_placeholder": "Yozing yoki tugmani tanlang...",
         "ovoz_xato": "❌ Ovozli xabarni qayta ishlashda xatolik yuz berdi. Birozdan so'ng qaytadan urinib ko'ring.",
         "matn_xato": "❌ Xabaringizni qayta ishlashda xatolik yuz berdi. Birozdan so'ng qaytadan urinib ko'ring.",
@@ -164,7 +174,7 @@ T = {
             "🕓 /oxirgi — последние 5 записей (удалить/исправить)\n"
             "📥 /eksport — CSV файл\n"
             "🧹 /tozalash — удалить все записи\n"
-            "🔗 /sahifa — ссылка на личную страницу\n"
+            "🔗 /sahifa — открыть приложение\n"
             "🌐 /til — сменить язык\n\n"
             "💡 Все эти же действия есть в меню ниже. Хорошего учёта! 💰"
         ),
@@ -226,17 +236,16 @@ T = {
         "tuzatish_bekor_ok": "❌ Исправление отменено.",
         "tuzatish_xato": "❌ Ошибка при исправлении. Попробуйте снова или /tuzatish_bekor.",
         "sahifa_xabar": (
-            "🔗 Ваша личная страница:\n{link}\n\n"
-            "На ней: баланс, категории, все записи и кнопка "
-            "скачивания CSV.\n\n"
-            "🔗 Сохраните ссылку — она открывается на любом устройстве."
+            "📊 Ваше личное приложение — баланс, аналитика и все записи "
+            "в одном месте:"
         ),
-        "sahifa_tugma": "📊 Открыть мою страницу",
+        "sahifa_tugma": "📊 Открыть приложение",
+        "hisobot_tugma": "📊 Посмотреть отчёт",
         "menyu_balans": "📊 Баланс",
         "menyu_oxirgi": "🕓 Последние записи",
         "menyu_fayl": "📥 Скачать данные файлом",
         "menyu_tozalash": "🧹 Очистить все записи",
-        "menyu_sahifa": "🔗 Моя страница",
+        "menyu_app": "📊 Финансы",
         "menyu_placeholder": "Напишите или выберите кнопку...",
         "ovoz_xato": "❌ Ошибка при обработке голосового сообщения. Попробуйте позже.",
         "matn_xato": "❌ Ошибка при обработке сообщения. Попробуйте позже.",
@@ -247,7 +256,7 @@ T = {
 
 # ============================ YORDAMCHILAR ============================
 
-MENYU_KALITLARI = ("menyu_balans", "menyu_oxirgi", "menyu_fayl", "menyu_tozalash", "menyu_sahifa")
+MENYU_KALITLARI = ("menyu_balans", "menyu_oxirgi", "menyu_fayl", "menyu_tozalash", "menyu_app")
 
 # Ikkala tilning barcha tugma matnlari (routing uchun)
 MENYU_TUGMALARI = {T[til][k] for til in T for k in MENYU_KALITLARI}
@@ -259,7 +268,8 @@ def _til(update) -> str:
 
 def _menyu(til: str) -> ReplyKeyboardMarkup:
     t = T[til]
-    kb = [[t[k]] for k in MENYU_KALITLARI]
+    kb = [[t[k]] for k in MENYU_KALITLARI if k != "menyu_app"]
+    kb.append([KeyboardButton(t["menyu_app"], web_app=WebAppInfo(url=MINIAPP_URL))])
     return ReplyKeyboardMarkup(
         kb, resize_keyboard=True, input_field_placeholder=t["menyu_placeholder"]
     )
@@ -317,12 +327,15 @@ async def _natijani_saqla_va_javob_ber(update, context, natija: dict, til: str):
 
     data_store.yozuv_qosh(update.effective_chat.id, natija)
 
+    kb = InlineKeyboardMarkup(
+        [[InlineKeyboardButton(t["hisobot_tugma"], web_app=WebAppInfo(url=MINIAPP_URL))]]
+    )
     await update.message.reply_text(
         f"{_belgi(til, natija['turi'])} {t['qoshildi']}\n\n"
         f"{t['summa_lbl']}: {_summa_fmt(natija['summa'])} {t['som']}\n"
         f"{t['kategoriya_lbl']}: {natija['kategoriya']}\n"
         f"{t['izoh_lbl']}: {natija.get('izoh', '-')}",
-        reply_markup=_menyu(til),
+        reply_markup=kb,
     )
 
 
@@ -337,7 +350,6 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
     til = data_store.til_olish(chat_id)
     await update.message.reply_text(T[til]["menyu_tanlangan"], reply_markup=_menyu(til))
-    await _sahifa_yubor(update, context, til)
 
 
 async def _til_soraladi(update, context):
@@ -371,13 +383,11 @@ async def til_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def _sahifa_yubor(update, context, til: str):
-    link = _sahifa_link(update.effective_chat.id)
+    """Mini App'ni ochish — link yuborilmaydi."""
     kb = InlineKeyboardMarkup(
-        [[InlineKeyboardButton(T[til]["sahifa_tugma"], url=link)]]
+        [[InlineKeyboardButton(T[til]["sahifa_tugma"], web_app=WebAppInfo(url=MINIAPP_URL))]]
     )
-    await update.message.reply_text(
-        T[til]["sahifa_xabar"].format(link=link), reply_markup=kb
-    )
+    await update.message.reply_text(T[til]["sahifa_xabar"], reply_markup=kb)
 
 
 async def jadval(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -621,8 +631,7 @@ async def menyu_tugmasi(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await eksport(update, context)
     elif matn == t["menyu_tozalash"]:
         await tozalash(update, context)
-    elif matn == t["menyu_sahifa"]:
-        await jadval(update, context)
+
 
 
 def asosiy():
@@ -631,6 +640,17 @@ def asosiy():
         raise RuntimeError("TELEGRAM_BOT_TOKEN .env faylida topilmadi!")
 
     app = Application.builder().token(token).build()
+
+    async def _miniapp_menyu(app_):
+        """Telegram pastdagi menyuga Mini App tugmasini o'rnatadi."""
+        try:
+            await app_.bot.set_chat_menu_button(
+                menu_button=MenuButtonWebApp(text="📊 Moliya", web_app=WebAppInfo(url=MINIAPP_URL))
+            )
+        except Exception:
+            logger.exception("Mini App menyu tugmasini o'rnatib bo'lmadi")
+
+    app.post_init = _miniapp_menyu
 
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("til", til_cmd))

@@ -6,12 +6,12 @@ import datetime
 import json
 import os
 import threading
+import uuid
 from collections import defaultdict
 from zoneinfo import ZoneInfo
 
 DATA_JILD = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
 _qulf = threading.Lock()
-
 
 
 def _fayl_yuli(chat_id) -> str:
@@ -36,6 +36,7 @@ def yozuv_qosh(chat_id, natija: dict):
     """AI natijasini (turi, kategoriya, summa...) shu user jadvaliga qo'shadi."""
     hozir = datetime.datetime.now(ZoneInfo("Asia/Tashkent"))
     yozuv = {
+        "id": uuid.uuid4().hex[:8],
         "sana": hozir.date().isoformat(),
         "vaqt": hozir.strftime("%H:%M"),
         "turi": "Daromad" if natija["turi"] == "daromad" else "Harajat",
@@ -89,6 +90,58 @@ def yozuvni_yangilash(chat_id, indeks: int, yangi_yozuv: dict):
             _saqla(chat_id, yozuvlar)
 
 
+def yozuvlar_id_bilan(chat_id) -> list:
+    """Barcha yozuvlar; eskilarida 'id' bo'lmasa bir marta berib qo'yadi (lazy migratsiya)."""
+    with _qulf:
+        yozuvlar = _yukla(chat_id)
+        ozi = False
+        for y in yozuvlar:
+            if not y.get("id"):
+                y["id"] = uuid.uuid4().hex[:8]
+                ozi = True
+        if ozi:
+            _saqla(chat_id, yozuvlar)
+    return yozuvlar
+
+
+def yozuvni_ochirish_id(chat_id, yozuv_id) -> bool:
+    with _qulf:
+        yozuvlar = _yukla(chat_id)
+        yangi = [y for y in yozuvlar if y.get("id") != yozuv_id]
+        if len(yangi) == len(yozuvlar):
+            return False
+        _saqla(chat_id, yangi)
+        return True
+
+
+def yozuvni_yangilash_id(chat_id, yozuv_id, o_zgarishlar: dict) -> bool:
+    """Mini App'dagi tahrirlash: faqat berilgan maydonlarni yangilaydi."""
+    with _qulf:
+        yozuvlar = _yukla(chat_id)
+        for i, y in enumerate(yozuvlar):
+            if y.get("id") == yozuv_id:
+                turi = o_zgarishlar.get("turi", "daromad")
+                yozuvlar[i] = {
+                    "id": yozuv_id,
+                    "sana": o_zgarishlar.get("sana", y["sana"]),
+                    "vaqt": o_zgarishlar.get("vaqt", y["vaqt"]),
+                    "turi": "Daromad" if turi == "daromad" else "Harajat",
+                    "kategoriya": o_zgarishlar.get("kategoriya", y["kategoriya"]),
+                    "summa": o_zgarishlar.get("summa", y["summa"]),
+                    "izoh": o_zgarishlar.get("izoh", y.get("izoh", "")),
+                    "asl_matn": y.get("asl_matn", ""),
+                }
+                _saqla(chat_id, yozuvlar)
+                return True
+        return False
+
+
+def tozalash(chat_id) -> int:
+    with _qulf:
+        yozuvlar = _yukla(chat_id)
+        soni = len(yozuvlar)
+        _saqla(chat_id, [])
+        return soni
 def tozalash(chat_id) -> int:
     with _qulf:
         yozuvlar = _yukla(chat_id)

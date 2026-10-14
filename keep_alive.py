@@ -14,6 +14,10 @@ import data_store
 
 app = Flask(__name__)
 
+# --- Telegram Mini App (Web App) marshrutlari ---
+import miniapp
+miniapp.register(app)
+
 # ============================ TARJIMALAR ============================
 
 D = {
