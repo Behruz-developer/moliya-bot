@@ -25,6 +25,12 @@ _html_cache = None
 _support_cache = {"url": None, "vaqt": 0.0}
 
 
+def _hash_hisobla(qiymatlar: dict, secret: bytes) -> str:
+    """initData data-check-string imzosi (rasmiy algoritm)."""
+    data_check = "\n".join(f"{k}={qiymatlar[k]}" for k in sorted(qiymatlar))
+    return hmac.new(secret, data_check.encode(), hashlib.sha256).hexdigest()
+
+
 def _bot_token() -> str:
     return os.getenv("TELEGRAM_BOT_TOKEN", "").strip()
 
@@ -42,11 +48,26 @@ def _initdanni_tekshir(init_data: str):
     hash_qs = next((v for k, v in juftliklar if k == "hash"), None)
     if not hash_qs:
         return None, "hash"
-    data_check = "\n".join(f"{k}={qiymatlar[k]}" for k in sorted(qiymatlar))
     secret = hmac.new(b"WebAppData", _bot_token().encode(), hashlib.sha256).digest()
-    hisob = hmac.new(secret, data_check.encode(), hashlib.sha256).hexdigest()
-    if not hmac.compare_digest(hisob, hash_qs):
-        logger.info("MiniApp auth: hash mos emas (server tokeni boshqacha?)")
+    # Ba'zi Telegram clientlari qiymatlarni decode qilib yoki tartibni
+    # buzib imzolaydi — uchala variantni ham sinab ko'ramiz.
+    hashlar = [
+        _hash_hisobla(qiymatlar, secret),
+        _hash_hisobla({k: urllib.parse.unquote(v) for k, v in qiymatlar.items()}, secret),
+        hmac.new(secret, "&".join(f"{k}={v}" for k, v in juftliklar if k != "hash").encode(), hashlib.sha256).hexdigest(),
+    ]
+    hisob = hashlar[0]
+    if not any(hmac.compare_digest(h, hash_qs) for h in hashlar):
+        tok = _bot_token()
+        logger.info(
+            "MiniApp auth: hash mos emas (token %d belgi %s...%s; olindi %s..., kutilgan %s...)",
+            len(tok), tok[:4], tok[-4:], str(hash_qs)[:10], hisob[:10],
+        )
+        g.auth_diag = {
+            "token": "%d belgi · %s…%s" % (len(tok), tok[:4], tok[-4:]),
+            "hash_olindi": str(hash_qs)[:16],
+            "hash_kutilgan": hisob[:16],
+        }
         return None, "hash"
     try:
         auth_date = int(qiymatlar.get("auth_date", "0"))
@@ -75,7 +96,11 @@ def _userdan():
 
 
 def _auth_401():
-    return jsonify({"ok": False, "xato": "auth", "sabab": getattr(g, "auth_sabab", "")}), 401
+    return jsonify({
+        "ok": False, "xato": "auth",
+        "sabab": getattr(g, "auth_sabab", ""),
+        "diag": getattr(g, "auth_diag", None),
+    }), 401
 
 
 def _til(user) -> str:

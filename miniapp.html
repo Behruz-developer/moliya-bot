@@ -293,7 +293,10 @@ ru: {
   auth_old: "Обновите Telegram",
   auth_old_x: "Ваш Telegram устарел — он не передаёт данные для входа (initData). Нажмите синюю кнопку «Обновить» в левом нижнем углу Telegram (или скачайте новую версию с telegram.org) и откройте приложение заново. Либо откройте его в Telegram на телефоне.",
   auth_sig: "Вход не подтверждён",
-  auth_sig_x: "Подпись initData не совпала — проверьте TELEGRAM_BOT_TOKEN на сервере и откройте приложение заново.",
+  auth_sig_x: "Скорее всего на сервере указан другой TELEGRAM_BOT_TOKEN. Проверьте в Render → Environment, что токен совпадает с токеном бота, затем откройте приложение заново.",
+  auth_diag_t: "Техническая информация",
+  auth_diag_token: "Токен на сервере",
+  auth_diag_hash: "hash: получен ≠ ожидался",
   auth_exp: "Сессия устарела",
   auth_exp_x: "Закройте приложение и откройте его заново.",
   load_err: "Не удалось загрузить данные",
@@ -345,7 +348,10 @@ uz: {
   auth_old: "Telegram'ni yangilang",
   auth_old_x: "Telegram versiyangiz eskirgan — u kirish ma'lumotlarini (initData) yubormaydi. Chap pastdagi ko'k «Yangilash» tugmasini bosing (yoki telegram.org'dan yangi versiyani o'rnatib), ilovani qayta oching. Telefondagi Telegram'da ham ochishingiz mumkin.",
   auth_sig: "Kirish tasdiqlanmadi",
-  auth_sig_x: "initData imzosi mos kelmadi — serverdagi TELEGRAM_BOT_TOKEN'ni tekshirib, ilovani qayta oching.",
+  auth_sig_x: "Ehtimol serverdagi TELEGRAM_BOT_TOKEN boshqacha. Render → Environment bo'limida shu bot tokeni bilan bir xil ekanini tekshirib, ilovani qayta oching.",
+  auth_diag_t: "Texnik ma'lumot",
+  auth_diag_token: "Serverdagi token",
+  auth_diag_hash: "hash: keldi ≠ kutilgan",
   auth_exp: "Sessiya eskirgan",
   auth_exp_x: "Ilovani yopib, qayta oching.",
   load_err: "Ma'lumotlar yuklanmadi",
@@ -458,7 +464,7 @@ async function api(url, method, body){
   if (body !== undefined){ opt.headers["Content-Type"] = "application/json"; opt.body = JSON.stringify(body); }
   const r = await fetch(url, opt);
   const d = await r.json().catch(()=>({}));
-  if (!r.ok) throw Object.assign(new Error(d.xato||"err"), {status:r.status, sabab:d.sabab||""});
+  if (!r.ok) throw Object.assign(new Error(d.xato||"err"), {status:r.status, sabab:d.sabab||"", diag:d.diag||null});
   return d;
 }
 
@@ -471,6 +477,7 @@ async function load(){
     renderAll();
   }catch(e){
     if (e.status === 401){
+      S._diag = e.diag || null;
       $("pg-home").innerHTML = authErrHtml(e.sabab || "");
       $("tabbar").classList.add("hidden"); $("fabBtn").classList.add("hidden");
     } else {
@@ -491,7 +498,17 @@ function authErrHtml(sabab){
     ${ICONS.person}<b>${esc(t(key))}</b>
     <p style="margin:10px 0 16px;font-size:13.5px;color:var(--tx2);line-height:1.5;max-width:320px;margin-left:auto;margin-right:auto">${esc(t(key+"_x"))}</p>
     <button class="bigbtn" style="margin:0 auto;max-width:200px" onclick="location.reload()">${esc(t("retry"))}</button>
+    ${(sabab==="hash"||sabab==="token") ? diagHtml() : ""}
     <p style="margin-top:18px;font-size:11px;color:#9B9BB4">debug: ${esc((tg&&tg.platform)||"no-tg")} · ${esc(sabab||"-")}</p>
+  </div>`;
+}
+function diagHtml(){
+  const d = S._diag;
+  if (!d) return "";
+  return `<div style="margin:14px auto 0;max-width:340px;background:#fff;border-radius:14px;padding:12px 14px;box-shadow:var(--sh);text-align:left;font-size:12px;line-height:1.7;color:var(--tx2)">
+    <b style="color:var(--tx)">${esc(t("auth_diag_t"))}</b><br>
+    ${esc(t("auth_diag_token"))}: ${esc(d.token||"-")}<br>
+    ${esc(t("auth_diag_hash"))} <span style="font-family:ui-monospace,Menlo,monospace">${esc(String(d.hash_olindi||"-"))}</span> ≠ <span style="font-family:ui-monospace,Menlo,monospace">${esc(String(d.hash_kutilgan||"-"))}</span>
   </div>`;
 }
 function errHtml(){
