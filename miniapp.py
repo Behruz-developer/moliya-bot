@@ -11,7 +11,6 @@ import logging
 import os
 import time
 import urllib.parse
-import urllib.request
 
 from flask import Response, g, jsonify, request
 
@@ -22,7 +21,6 @@ logger = logging.getLogger(__name__)
 
 _AUTH_MAX_YOSH = 86400  # initData amal qilish muddati (24 soat)
 _html_cache = None
-_support_cache = {"url": None, "vaqt": 0.0}
 
 
 def _hash_hisobla(qiymatlar: dict, secret: bytes) -> str:
@@ -145,25 +143,11 @@ def _profil(user) -> dict:
 
 
 def _support_url() -> str:
-    url = os.getenv("SUPPORT_URL", "")
+    """«Yordam va qo'llab-quvvatlash» havolasi: SUPPORT_URL env yoki @behruz_frontend."""
+    url = os.getenv("SUPPORT_URL", "").strip()
     if url:
         return url
-    hozir = time.time()
-    if _support_cache["url"] and hozir - _support_cache["vaqt"] < 3600:
-        return _support_cache["url"]
-    u = "https://t.me/telegram"
-    try:
-        sorov = urllib.request.Request(
-            f"https://api.telegram.org/bot{_bot_token()}/getMe", timeout=5
-        )
-        javob = json.loads(urllib.request.urlopen(sorov).read())
-        nom = javob.get("result", {}).get("username")
-        if nom:
-            u = f"https://t.me/{nom}"
-    except Exception:
-        logger.warning("getMe ishlamadi, default support url")
-    _support_cache.update(url=u, vaqt=hozir)
-    return u
+    return "https://t.me/behruz_frontend"
 
 
 def _html_olish() -> str:

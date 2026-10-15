@@ -120,12 +120,21 @@ def yozuvni_yangilash_id(chat_id, yozuv_id, o_zgarishlar: dict) -> bool:
         yozuvlar = _yukla(chat_id)
         for i, y in enumerate(yozuvlar):
             if y.get("id") == yozuv_id:
-                turi = o_zgarishlar.get("turi", "daromad")
+                # turi berilmagan bo'lsa — eski qiymatini SAQLAYDI (Mini App'dan
+                # sanani yangilashda xarajat daromadga aylanib ketish xatosi tuzatildi).
+                # income/expense (Mini App) va daromad/harajat (bot) Ikkalasi ham qabul qilinadi.
+                turi_xom = str(o_zgarishlar.get("turi", y.get("turi", ""))).lower()
+                if turi_xom in ("daromad", "income"):
+                    yangi_turi = "Daromad"
+                elif turi_xom in ("harajat", "xarajat", "expense"):
+                    yangi_turi = "Harajat"
+                else:
+                    yangi_turi = y.get("turi", "Harajat")
                 yozuvlar[i] = {
                     "id": yozuv_id,
                     "sana": o_zgarishlar.get("sana", y["sana"]),
                     "vaqt": o_zgarishlar.get("vaqt", y["vaqt"]),
-                    "turi": "Daromad" if turi == "daromad" else "Harajat",
+                    "turi": yangi_turi,
                     "kategoriya": o_zgarishlar.get("kategoriya", y["kategoriya"]),
                     "summa": o_zgarishlar.get("summa", y["summa"]),
                     "izoh": o_zgarishlar.get("izoh", y.get("izoh", "")),

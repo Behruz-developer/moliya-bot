@@ -55,7 +55,7 @@ Eski nomlar (`Одежда`, `Коммунальные услуги` va h.k.) av
 
 - `TELEGRAM_BOT_TOKEN` — majburiy (imzo va getMe uchun).
 - `PUBLIC_URL` yoki `RENDER_EXTERNAL_URL` — Mini App URL (`{PUBLIC_URL}/app`). HTTPS bo'lishi shart!
-- `SUPPORT_URL` (ixtiyoriy) — «Помощь и поддержка» havolasi; bo'lmasa botning o'z username'i.
+- `SUPPORT_URL` (ixtiyoriy) — «Помощь и поддержка» havolasi; bo'lmasa `https://t.me/behruz_frontend` ochiladi.
 
 ## Ishga tushirish (lokal)
 

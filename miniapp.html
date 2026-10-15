@@ -113,6 +113,18 @@ body{
 .insight .ic svg{width:20px;height:20px;color:#fff}
 .insight b{font-size:14px;font-weight:700;display:block}
 .insight p{font-size:13px;color:#7A76B5;margin-top:4px}
+/* --- Ustunli grafik (daromad vs xarajat) --- */
+.bchart{display:flex;align-items:flex-end;gap:2px;height:100px;margin-top:10px}
+.bcol{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:5px;height:100%}
+.bcol .bw{display:flex;align-items:flex-end;gap:2px;height:78px}
+.bcol .bw i{width:5px;max-width:40%;border-radius:3px;flex:none}
+.bcol .bw i.inc{background:var(--green)}
+.bcol .bw i.exp{background:var(--red)}
+.bcol .bl{font-size:9px;color:var(--tx2);height:12px;line-height:12px;white-space:nowrap}
+.blegend{display:flex;gap:16px;margin-top:12px;font-size:12.5px;color:var(--tx2);font-weight:600}
+.blegend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.blegend i.inc{background:var(--green)}
+.blegend i.exp{background:var(--red)}
 .card .chead{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:4px}
 .card .chead .tt{font-size:16px;font-weight:700}
 .card .chead .sb2{font-size:12.5px;color:var(--tx2);margin-top:2px}
@@ -262,6 +274,7 @@ ru: {
   week: "Неделя", month: "Месяц", year: "Год",
   a_bal: "Баланс за период", growth: "рост", decline: "снижение",
   donut_title: "Расходы по категориям", donut_sub: "Всего {s}", donut_empty: "Нет расходов за период",
+  bars_title: "Доходы и расходы",
   expenses_word: "расходов",
   ins_down: "Ваши расходы снизились на {p}%", ins_down_sub: "Вы потратили на {d} сум меньше, чем {ref}.",
   ins_up: "Ваши расходы выросли на {p}%", ins_up_sub: "Вы потратили на {d} сум больше, чем {ref}.",
@@ -317,6 +330,7 @@ uz: {
   week: "Hafta", month: "Oy", year: "Yil",
   a_bal: "Davr balansi", growth: "o'sish", decline: "pasayish",
   donut_title: "Kategoriyalar bo'yicha xarajatlar", donut_sub: "Jami {s}", donut_empty: "Davr uchun xarajat yo'q",
+  bars_title: "Daromad va xarajatlar",
   expenses_word: "xarajat",
   ins_down: "Xarajatlaringiz {p}% ga kamaydi", ins_down_sub: "Siz {ref} qaraganda {d} so'm kam sarfladingiz.",
   ins_up: "Xarajatlaringiz {p}% ga oshdi", ins_up_sub: "Siz {ref} qaraganda {d} so'm ko'p sarfladingiz.",
@@ -693,6 +707,32 @@ function donutData(p){
   if (arr.length > 4){ const rest = sumOf(arr.slice(4)); arr = arr.slice(0,4); arr.push({k:"other_expense", v:rest, other:true}); }
   return arr;
 }
+function barsChart(p){
+  const [a,b] = periodRange(p);
+  const cur = inPeriod(p);
+  const inc = {}, exp = {};
+  cur.forEach(y=>{ const k = p==="year" ? y.sana.slice(0,7) : y.sana;
+    const box = y.turi==="income" ? inc : exp;
+    box[k] = (box[k]||0) + y.summa; });
+  let keys = [], lbl = {};
+  if (p === "year"){
+    const yil = a.slice(0,4);
+    for (let i=1;i<=12;i++){ const k = yil+"-"+String(i).padStart(2,"0");
+      if (k <= b.slice(0,7)){ keys.push(k); lbl[k] = t("months")[i-1].slice(0,3); } }
+  } else {
+    const daysN = Math.round((dstr(b)-dstr(a))/86400000)+1;
+    const every = Math.ceil(daysN/7);
+    for (let i=0;i<daysN;i++){ const k = addDays(a,i); keys.push(k);
+      lbl[k] = (i % every === 0 || i === daysN-1) ? String(dstr(k).getDate()) : ""; }
+  }
+  const max = Math.max(1, ...keys.map(k=>Math.max(inc[k]||0, exp[k]||0)));
+  const cols = keys.map(k=>{
+    const ih = Math.round((inc[k]||0)/max*74), eh = Math.round((exp[k]||0)/max*74);
+    return `<div class="bcol"><div class="bw"><i class="inc" style="height:${ih}px"></i><i class="exp" style="height:${eh}px"></i></div><span class="bl">${lbl[k]}</span></div>`;
+  }).join("");
+  return `<div class="bchart">${cols}</div>
+    <div class="blegend"><span><i class="inc"></i>${esc(t("incomes"))}</span><span><i class="exp"></i>${esc(t("expenses"))}</span></div>`;
+}
 function renderAnalytics(){
   const p = S.period;
   const [a,b] = periodRange(p);
@@ -710,6 +750,7 @@ function renderAnalytics(){
     for(let i=0;i<12;i++){ const k=a.slice(0,4)+"-"+String(i+1).padStart(2,"0"); if (k<=b.slice(0,7)) { run += map[k]||0; pts.push(run); } } }
   const segs = donutData(p);
   const total = sumOf(segs.map(s=>s.v));
+  const totInc = sumOf(cur.filter(y=>y.turi==="income")), totExp = sumOf(cur.filter(y=>y.turi==="expense"));
   let off = 0; const R = 62, C = 2*Math.PI*R;
   const arcs = segs.map(s=>{
     const frac = total? s.v/total : 0;
@@ -758,6 +799,13 @@ function renderAnalytics(){
         <div class="legend">${segs.map(s=>`<div class="li"><span class="dot" style="background:${catColor(s.k)}"></span>
           <span class="ln">${esc(catName(s.k))}</span><span class="lv">${fmt(s.v)}</span></div>`).join("")}</div>
       </div>` : `<div class="empty" style="padding:24px">${esc(t("donut_empty"))}</div>`}
+    </div>
+    <div class="card">
+      <div class="chead">
+        <div><div class="tt">${esc(t("bars_title"))}</div>
+        <div class="sb2">${esc(short(totInc))} ↑ · ${esc(short(totExp))} ↓</div></div>
+      </div>
+      ${barsChart(p)}
     </div>
     ${ins}`;
   $("segP").querySelectorAll("button").forEach(b=>{
@@ -911,7 +959,7 @@ function openForm(id){
         <button id="ftInc" class="${S.formType==="income"?"on inc":""}">${esc(t("f_income"))}</button>
       </div>
       <label>${esc(t("f_amount"))}</label>
-      <input id="fAmt" type="number" inputmode="numeric" min="0" placeholder="0" value="${y?y.summa:""}">
+      <input id="fAmt" type="text" inputmode="numeric" autocomplete="off" placeholder="0" value="${y?fmt(y.summa):""}">
       <label>${esc(t("f_cat"))}</label>
       <div class="kgrid" id="fCats"></div>
       <label>${esc(t("f_comment"))}</label>
@@ -938,10 +986,21 @@ function openForm(id){
     $("ftInc").className = S.formType==="income" ? "on inc" : "";
   }
   drawCats();
+  const fAmt = $("fAmt");
+  fAmt.addEventListener("input", () => {
+    const el = fAmt;
+    const caretDigits = el.value.slice(0, el.selectionStart || 0).replace(/\D/g, "").length;
+    const out = el.value.replace(/\D/g, "").replace(/^0+(?=\d)/, "").slice(0, 12)
+      .replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+    el.value = out;
+    let pos = 0, cnt = 0;
+    while (pos < out.length && cnt < caretDigits){ if (out[pos] !== " ") cnt++; pos++; }
+    el.setSelectionRange(pos, pos);
+  });
   S._selKat = () => selKat;
 }
 async function saveForm(){
-  const summa = Math.round(parseFloat($("fAmt").value || "0"));
+  const summa = parseInt(($("fAmt").value || "").replace(/\D/g, ""), 10) || 0;
   if (!summa || summa <= 0){ toast(t("err")); return; }
   const payload = {
     turi: S.formType,
