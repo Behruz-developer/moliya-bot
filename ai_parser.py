@@ -7,6 +7,7 @@ import os
 import json
 import logging
 import datetime
+import urllib.request
 from dotenv import load_dotenv
 from google import genai
 from categories import (
@@ -36,8 +37,75 @@ MODEL_NOMI = os.getenv("GEMINI_MODEL", "gemini-3.5-flash")
 # Asosiy model 503 (yuk yuqori) yoki 404 qaytarsa, navbatma-navbat shularga urinamiz.
 ZAXIRA_MODELLAR = ["gemini-3.8-flash", "gemini-3.5-flash-lite"]
 
+# ============================ VALYUTA KURSLARI ============================
+# Markaziy bank rasmiy kurslari (bepul, kalitsiz). Kursni AI o'zi taxmin
+# qilmasligi uchun har xabarda joriy kurs prompt'ga kiritiladi.
+_KURS_URL = "https://cbu.uz/uz/arkhiv-kursov-valyut/json/"
+_KURS_VALYUTALAR = ("USD", "EUR", "RUB", "CNY")
+_kurs_kesh = {"sana": None, "kurslar": {}}
+
+
+def _kurslar_ol() -> dict:
+    """Bugungi rasmiy kurslarni qaytaradi (kunlik kesh). Olinmasa — eski kesh yoki {}."""
+    bugun = datetime.date.today().isoformat()
+    if _kurs_kesh["kurslar"] and _kurs_kesh["sana"] == bugun:
+        return _kurs_kesh["kurslar"]
+    try:
+        sorov = urllib.request.Request(_KURS_URL, headers={"User-Agent": "Mozilla/5.0"})
+        with urllib.request.urlopen(sorov, timeout=8) as javob:
+            mal = json.loads(javob.read().decode("utf-8"))
+        yangi = {}
+        for x in mal:
+            kodi = x.get("Ccy", "")
+            if kodi in _KURS_VALYUTALAR:
+                try:
+                    yangi[kodi] = float(str(x.get("Rate", "0")).replace(" ", "").replace(",", ""))
+                except ValueError:
+                    pass
+        if yangi:
+            _kurs_kesh.update(sana=bugun, kurslar=yangi)
+            logger.info("Valyuta kurslari olindi: %s", yangi)
+    except Exception as e:
+        logger.warning("Valyuta kurslari olinmadi (%s) — %s", e,
+                       "eski kesh ishlatiladi" if _kurs_kesh["kurslar"] else "kurs promptga kirmaydi")
+    return _kurs_kesh["kurslar"]
+
+
+def _kurs_matni(til: str) -> str:
+    """Prompt'ga qo'shiladigan kurs bloki (kurs olinmasa bo'sh matn)."""
+    kurslar = _kurslar_ol()
+    if not kurslar:
+        return ""
+    qatorlar = []
+    nomlar = {"USD": ("доллар США", "dollar"), "EUR": ("евро", "yevro"),
+              "RUB": ("российский рубль", "rubl"), "CNY": ("китайский юань", "yuan")}
+    if til == "ru":
+        for k, v in kurslar.items():
+            nom = nomlar.get(k, (k, k))[0]
+            qatorlar.append(f"1 {nom} = {v:g} сум")
+        matn = ("\n\nВАЖНО — курс валют на сегодня (официальный курс ЦБ Узбекистана):\n"
+                + "\n".join(qatorlar)
+                + "\nЕсли сумма указана в иностранной валюте, переведи её в сумы ТОЛЬКО по этому курсу:\n"
+                "умножь сумму на курс (например, 50 долларов = 50 × "
+                + f"{kurslar['USD']:g}" + " = " + f"{50 * kurslar['USD']:g}" + " сум).\n"
+                "Курс из интернета или из своей памяти НЕ используй и НЕ придумывай!")
+        return matn
+    for k, v in kurslar.items():
+        nom = nomlar.get(k, (k, k))[1]
+        qatorlar.append(f"1 {nom} = {v:g} so'm")
+    usd = kurslar.get("USD")
+    misol = f" (masalan, \"50 dollar\" = 50 × {usd:g} = {50 * usd:g} so'm)" if usd else ""
+    matn = ("\n\nMUHIM — bugungi valyuta kurslari (Markaziy bank rasmiy kursi):\n"
+            + "\n".join(qatorlar)
+            + "\nAgar summa chet el valyutasida berilgan bo'lsa, uni FAQAT shu kurs bo'yicha\n"
+            "so'mga o'gir: summani kursga ko'paytir" + misol + ".\n"
+            "Kursni internetdan yoki o'z xotirangdan OLMA va o'ylab chiqarma!")
+    return matn
+
+
 def _system_prompt(til: str = "uz") -> str:
-    """Tilga mos system prompt qaytaradi (til='uz' yoki 'ru')."""
+    """Tilga mos system prompt qaytaradi (til='uz' yoki 'ru'). Joriy kurs ham kiradi."""
+    kurs_bloki = _kurs_matni(til)
     if til == "ru":
         daromad_list = ", ".join(DAROMAD_KATEGORIYALARI_RU)
         harajat_list = ", ".join(HARAJAT_KATEGORIYALARI_RU)
@@ -58,7 +126,7 @@ def _system_prompt(til: str = "uz") -> str:
 
 Правильно понимай суммы: "4 миллиона", "4 млн", "4000000", "4 тысячи" (=4000)
 и т.п. переводи в правильное число. Если финансовой информации в сообщении
-вообще нет, верни turi = "noaniq".
+вообще нет, верни turi = "noaniq".{kurs_bloki}
 """
     daromad_list = ", ".join(DAROMAD_KATEGORIYALARI)
     harajat_list = ", ".join(HARAJAT_KATEGORIYALARI)
@@ -79,7 +147,7 @@ Agar turi = harajat bo'lsa, kategoriya shulardan biri bo'lishi kerak: {harajat_l
 
 Summalarni to'g'ri tushun: "4 million", "4mln", "4000000", "4 ming" (=4000) kabi
 ifodalarni to'g'ri songa o'gir. Agar xabarda moliyaviy ma'lumot umuman
-topilmasa, "turi" ni "noaniq" qilib qaytar.
+topilmasa, "turi" ni "noaniq" qilib qaytar.{kurs_bloki}
 """
 
 
