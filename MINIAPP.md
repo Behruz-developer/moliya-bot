@@ -37,9 +37,18 @@ Server initData'ni bot tokeni bilan HMAC-SHA256 (secret = HMAC("WebAppData", tok
 | POST | `/api/transactions` | Yangi yozuv: `{turi, kategoriya, summa, izoh, sana?}` |
 | PATCH | `/api/transactions/<id>` | Tahrirlash (faqat yuborilgan maydonlar) |
 | DELETE | `/api/transactions/<id>` | O'chirish |
+| POST | `/api/export` | `{tur: "all"|"income"|"expense", dan?, gacha?}` (YYYY-MM-DD) — filtrlangan yozuvlar stil berilgan **.xlsx** bo'lib **bot chatiga** `sendDocument` orqali yuboriladi (`xlsx_yoz.py`, faqat stdlib) |
 
 Yozuv JSON: `{id, sana, vaqt, turi: "income"|"expense", kategoriya: <kalit>, summa: <int>, izoh}`.
 Status «Зачислено/Выполнено» turi bo'yicha frontda chiqariladi — bazada saqlanmaydi.
+
+## Eksport va tez summalar
+
+- **Eksport UI:** Profil → «Excel fayl qilib olish» — tur chiplari (Hammasi/Daromad/Xarajat) + davr presetlari (Bugun, 7 kun, Shu oy, O'tgan oy, Shu yil, Barchasi) yoki custom sana oralig'i (dan/gacha). Fayl bot chatiga keladi (Telegram WebApp'da brauzer yuklab olishi ishonchsiz).
+- **Tez summalar:** forma Summa maydoni ostida foydalanuvchining o'z tarixidan shu kategoriya (bo'sh bo'lsa tur bo'yicha) eng ko'p kiritilgan 4 ta summa chip sifatida; bosilganda inputga formatlangan holda yoziladi (Payme/Click uslubi).
+- **Bot takroriy xabardan himoya:** bir xil yozuv 5 daqiqada ikki marta qo'shilmaydi (`bot.py:_oxirgi_qoshilgan`). Forma tugmasida ham debounce bor.
+- **Hisobot so'rovlari:** botga "oxirgi haftadagi xarajatlar qancha" kabi ovozli/matnli so'rov yuborilsa, AI `turi="hisobot"` (+ davr, nima) qaytaradi va bot hisobot matnini chiqaradi.
+- **Pastki tugmalar:** reply keyboard'da faqat «Moliya ilovasi» tugmasi qoldi; qolgan amallar ilova ichida (/balans, /oxirgi, /eksport, /tozalash buyruqlari ham ishlayveradi).
 
 ## Kategoriyalar (kalit: ru nom / rang)
 

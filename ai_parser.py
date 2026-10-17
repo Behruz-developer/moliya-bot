@@ -114,12 +114,19 @@ def _system_prompt(til: str = "uz") -> str:
 ТОЛЬКО в следующем JSON-формате, без какого-либо дополнительного текста:
 
 {{
-  "turi": "daromad" или "harajat" или "noaniq",
-  "summa": <число в сумах, например 4000000>,
-  "kategoriya": "<одно из списка ниже>",
+  "turi": "daromad" или "harajat" или "hisobot" или "noaniq",
+  "summa": <число в сумах, например 4000000 — для hisobot укажи 0>,
+  "kategoriya": "<одно из списка ниже> — для hisobot оставь пустым",
   "izoh": "<короткий комментарий, не длиннее 5-6 слов>",
+  "davr": "<только для hisobot: bugun | hafta | oy | yil | hammasi>",
+  "nima": "<только для hisobot: daromad | harajat | hammasi>",
   "eshitilgan_matn": "<если ввод голосовой — запиши здесь расшифровку; если текстовый — оставь пустым>"
 }}
+
+ВАЖНО — запросы отчётов: если пользователь просит НЕ добавить запись,
+а узнать статистику (например: "сколько расходов за последнюю неделю",
+"какой мой доход за этот месяц", "дай отчёт по расходам за год"),
+верни turi = "hisobot" и заполни "davr" и "nima". В этом случае summa = 0.
 
 Если turi = daromad (доход), категория должна быть одной из: {daromad_list}
 Если turi = harajat (расход), категория должна быть одной из: {harajat_list}
@@ -135,12 +142,20 @@ def _system_prompt(til: str = "uz") -> str:
 FAQAT quyidagi JSON formatda javob ber, hech qanday qo'shimcha matn yozma:
 
 {{
-  "turi": "daromad" yoki "harajat" yoki "noaniq",
-  "summa": <son, so'm hisobida, masalan 4000000>,
-  "kategoriya": "<quyidagi ro'yxatdan biri>",
+  "turi": "daromad" yoki "harajat" yoki "hisobot" yoki "noaniq",
+  "summa": <son, so'm hisobida, masalan 4000000 — hisobot bo'lsa 0>,
+  "kategoriya": "<quyidagi ro'yxatdan biri> — hisobot bo'lsa bo'sh qoldir",
   "izoh": "<qisqa, 5-6 so'zdan oshmagan izoh>",
+  "davr": "<faqat hisobot uchun: bugun | hafta | oy | yil | hammasi>",
+  "nima": "<faqat hisobot uchun: daromad | harajat | hammasi>",
   "eshitilgan_matn": "<agar kirish ovozli xabar bo'lsa, eshitgan gapingizni shu yerga yoz; matnli xabar bo'lsa bo'sh qoldir>"
 }}
+
+MUHIM — hisobot so'rovlari: agar foydalanuvchi YANGI yozuv qo'shishni emas,
+balki hisobot/statistika so'rasa (masalan: "oxirgi haftadagi xarajatlar qancha",
+"bu oy daromadim qancha bo'ldi", "yillik rasxodlar to'g'risida malumot ber",
+"shu hafta qancha sarfladim"), "turi" ni "hisobot" qilib qaytar va
+"davr" hamda "nima" maydonlarini to'ldir. Bu holda "summa" = 0 bo'lsin.
 
 Agar turi = daromad bo'lsa, kategoriya shulardan biri bo'lishi kerak: {daromad_list}
 Agar turi = harajat bo'lsa, kategoriya shulardan biri bo'lishi kerak: {harajat_list}

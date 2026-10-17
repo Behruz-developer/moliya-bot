@@ -11,12 +11,14 @@ except ImportError:
     pass
 
 import os
-import csv
 import io
 import re
+import time
+import datetime
 import tempfile
 import logging
 
+import httpx
 from dotenv import load_dotenv
 from telegram import (
     Update,
@@ -38,6 +40,7 @@ from telegram.ext import (
 
 from ai_parser import matnni_tahlil_qil, ovozni_tahlil_qil
 import data_store
+import xlsx_yoz
 
 load_dotenv()
 
@@ -155,6 +158,14 @@ T = {
         "matn_xato": "❌ Xabaringizni qayta ishlashda xatolik yuz berdi. Birozdan so'ng qaytadan urinib ko'ring.",
         "eshitdim": "🎙 Eshitdim: \"{matn}\"",
         "til_cmd_xabar": "🌐 Tilni tanlang / Выберите язык:",
+        "hisobot_sarlavha": "📊 Hisobot: {davr}",
+        "hisobot_bosh": "📭 Bu davr uchun yozuv topilmadi.",
+        "davr_bugun": "Bugun", "davr_hafta": "Oxirgi 7 kun",
+        "davr_oy": "Shu oy", "davr_yil": "Shu yil", "davr_hammasi": "Barcha davr",
+        "his_daromad": "🟢 Daromad", "his_harajat": "🔴 Xarajat",
+        "his_balans": "💼 Balans", "his_soni": "🔢 Yozuvlar soni: {n} ta",
+        "his_kat": "📂 Kategoriyalar bo'yicha:",
+        "his_takror": "⚠️ Xuddi shunday yozuv hozirgina qo'shilgan — takroriy xabar saqlanmadi.",
     },
     "ru": {
         "salom_tanlash": "Ассалому алайкум! 👋\nПожалуйста, выберите язык 👇",
@@ -251,6 +262,14 @@ T = {
         "matn_xato": "❌ Ошибка при обработке сообщения. Попробуйте позже.",
         "eshitdim": "🎙 Я услышал: \"{matn}\"",
         "til_cmd_xabar": "🌐 Tilni tanlang / Выберите язык:",
+        "hisobot_sarlavha": "📊 Отчёт: {davr}",
+        "hisobot_bosh": "📭 Записей за этот период нет.",
+        "davr_bugun": "Сегодня", "davr_hafta": "Последние 7 дней",
+        "davr_oy": "Этот месяц", "davr_yil": "Этот год", "davr_hammasi": "За всё время",
+        "his_daromad": "🟢 Доход", "his_harajat": "🔴 Расход",
+        "his_balans": "💼 Баланс", "his_soni": "🔢 Кол-во записей: {n}",
+        "his_kat": "📂 По категориям:",
+        "his_takror": "⚠️ Такая же запись только что добавлена — повторное сообщение не сохранено.",
     },
 }
 
@@ -267,9 +286,9 @@ def _til(update) -> str:
 
 
 def _menyu(til: str) -> ReplyKeyboardMarkup:
+    """Faqat Moliya ilovasi tugmasi — qolgan amallar ilova ichida."""
     t = T[til]
-    kb = [[t[k]] for k in MENYU_KALITLARI if k != "menyu_app"]
-    kb.append([KeyboardButton(t["menyu_app"], web_app=WebAppInfo(url=MINIAPP_URL))])
+    kb = [[KeyboardButton(t["menyu_app"], web_app=WebAppInfo(url=MINIAPP_URL))]]
     return ReplyKeyboardMarkup(
         kb, resize_keyboard=True, input_field_placeholder=t["menyu_placeholder"]
     )
@@ -319,13 +338,102 @@ def _balans_matni(chat_id, til: str) -> str:
     return "\n".join(qatorlar)
 
 
+def _davr_oraligi(davr: str) -> str:
+    """Davr boshlanish sanasi ('hammasi' uchun bo'sh satr)."""
+    bugun = datetime.date.today()
+    if davr == "bugun":
+        return bugun.isoformat()
+    if davr == "hafta":
+        return (bugun - datetime.timedelta(days=6)).isoformat()
+    if davr == "oy":
+        return bugun.replace(day=1).isoformat()
+    if davr == "yil":
+        return bugun.replace(month=1, day=1).isoformat()
+    return ""
+
+
+def _hisobot_matni(chat_id, til: str, davr: str, nima: str) -> str:
+    """AI 'hisobot' deganda — davr va tur bo'yicha hisobot matni."""
+    t = T[til]
+    som = t["som"]
+    yozuvlar = data_store.barchasi(chat_id)
+    bosh = _davr_oraligi(davr)
+    if bosh:
+        yozuvlar = [y for y in yozuvlar if str(y.get("sana", ""))[:10] >= bosh]
+    filtr = {"daromad": ("Daromad",), "harajat": ("Harajat",)}.get(nima, ("Daromad", "Harajat"))
+    tanlangan = [y for y in yozuvlar if y.get("turi") in filtr]
+    if not tanlangan:
+        return t["hisobot_bosh"]
+
+    dar = sum(data_store._son_qil(y.get("summa", 0)) for y in tanlangan if y.get("turi") == "Daromad")
+    har = sum(data_store._son_qil(y.get("summa", 0)) for y in tanlangan if y.get("turi") == "Harajat")
+    kat = {}
+    for y in tanlangan:
+        nom = y.get("kategoriya", "-")
+        kat[nom] = kat.get(nom, 0) + data_store._son_qil(y.get("summa", 0))
+
+    davr_kalit = davr if davr in ("bugun", "hafta", "oy", "yil", "hammasi") else "hammasi"
+    q = [t["hisobot_sarlavha"].format(davr=t["davr_" + davr_kalit]), ""]
+    if nima in ("daromad", "hammasi"):
+        q.append(f"{t['his_daromad']}: {_summa_fmt(dar)} {som}")
+    if nima in ("harajat", "hammasi"):
+        q.append(f"{t['his_harajat']}: {_summa_fmt(har)} {som}")
+    if nima == "hammasi":
+        q.append(f"{t['his_balans']}: {_summa_fmt(dar - har)} {som}")
+    q.append(t["his_soni"].format(n=len(tanlangan)))
+
+    top = sorted(kat.items(), key=lambda x: -x[1])[:7]
+    if top:
+        q.append("")
+        q.append(t["his_kat"])
+        if nima == "hammasi":
+            q.extend(f"  • {nom}: {_summa_fmt(v)} {som}" for nom, v in top)
+        else:
+            belgi = "🟢" if nima == "daromad" else "🔴"
+            q.extend(f"  {belgi} {nom}: {_summa_fmt(v)} {som}" for nom, v in top)
+    return "\n".join(q)
+
+
+# Takroriy xabarlardan himoya: oxirgi qo'shilgan yozuv kaliti
+_oxirgi_qoshilgan = {}  # chat_id -> (kalit, vaqt)
+_DUPL_VAQT = 300  # soniya
+
+
 async def _natijani_saqla_va_javob_ber(update, context, natija: dict, til: str):
     t = T[til]
+
+    # Hisobot so'rovi — yozuv EMAS, hisobot matnini qaytaramiz
+    if natija.get("turi") == "hisobot":
+        await update.message.reply_text(
+            _hisobot_matni(
+                update.effective_chat.id, til,
+                natija.get("davr", "hammasi"),
+                natija.get("nima", "hammasi"),
+            )
+        )
+        return
+
     if natija.get("turi") not in ("daromad", "harajat"):
         await update.message.reply_text(t["qoshilmadi"])
         return
 
-    data_store.yozuv_qosh(update.effective_chat.id, natija)
+    # Takroriy xabarlardan himoya: bir xil yozuv 5 daqiqada 2 marta qo'shilmasin
+    # (AI javobi kechikkanda foydalanuvchi xabarni qayta yuborishi mumkin)
+    chat_id = update.effective_chat.id
+    kalit = (
+        natija.get("turi"),
+        data_store._son_qil(natija.get("summa", 0)),
+        natija.get("kategoriya", ""),
+        natija.get("izoh", ""),
+    )
+    oxirgi = _oxirgi_qoshilgan.get(chat_id)
+    if oxirgi and oxirgi[0] == kalit and time.time() - oxirgi[1] < _DUPL_VAQT:
+        logger.info("Takroriy xabar tushirib qoldirildi (chat %s)", chat_id)
+        await update.message.reply_text(t["his_takror"])
+        return
+    _oxirgi_qoshilgan[chat_id] = (kalit, time.time())
+
+    data_store.yozuv_qosh(chat_id, natija)
 
     kb = InlineKeyboardMarkup(
         [[InlineKeyboardButton(t["hisobot_tugma"], web_app=WebAppInfo(url=MINIAPP_URL))]]
@@ -409,7 +517,7 @@ async def balans(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def eksport(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Barcha ma'lumotlarni CSV fayl qilib yuboradi."""
+    """Barcha ma'lumotlarni chiroyli Excel (.xlsx) fayl qilib yuboradi."""
     til = _til(update)
     t = T[til]
     xabar = await update.message.reply_text(t["eksport_tayyorlanmoqda"])
@@ -419,18 +527,24 @@ async def eksport(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await xabar.edit_text(t["eksport_bosh"])
             return
 
-        buf = io.StringIO()
-        w = csv.writer(buf)
-        w.writerow(["Sana", "Vaqt", "Turi", "Kategoriya", "Summa", "Izoh", "Asl matn"])
-        for y in yozuvlar:
-            w.writerow([y["sana"], y["vaqt"], y["turi"], y["kategoriya"],
-                        y["summa"], y["izoh"], y["asl_matn"]])
+        yozuvlar.sort(key=lambda y: (str(y.get("sana", "")), str(y.get("vaqt", ""))))
+        qatorlar = [
+            [y.get("sana", ""), y.get("vaqt", ""), y.get("turi", ""),
+             y.get("kategoriya", ""), data_store._son_qil(y.get("summa", 0)),
+             y.get("izoh", "")]
+            for y in yozuvlar
+        ]
+        bugun = datetime.date.today().isoformat()
+        fayl_bytes = xlsx_yoz.yarat(
+            f"Moliya hisoboti — {bugun} ({len(yozuvlar)} ta yozuv)",
+            ["Sana", "Vaqt", "Turi", "Kategoriya", "Summa (so'm)", "Izoh"],
+            qatorlar,
+        )
 
-        fayl_bytes = "\ufeff".encode("utf-8") + buf.getvalue().encode("utf-8")
         await xabar.edit_text(t["eksport_topildi"].format(n=len(yozuvlar)))
         await update.message.reply_document(
             document=io.BytesIO(fayl_bytes),
-            filename="moliya_malumotlari.csv",
+            filename=f"moliya_{bugun}.xlsx",
             caption=t["eksport_caption"].format(n=len(yozuvlar)),
         )
         await xabar.delete()
@@ -588,6 +702,10 @@ async def matn_kelganda(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     try:
+        try:
+            await context.bot.send_chat_action(chat_id=update.effective_chat.id, action="typing")
+        except Exception:
+            pass
         natija = matnni_tahlil_qil(update.message.text, til=til)
         await _natijani_saqla_va_javob_ber(update, context, natija, til)
     except Exception:
@@ -599,6 +717,10 @@ async def ovoz_kelganda(update: Update, context: ContextTypes.DEFAULT_TYPE):
     til = _til(update)
     t = T[til]
     try:
+        try:
+            await context.bot.send_chat_action(chat_id=update.effective_chat.id, action="typing")
+        except Exception:
+            pass
         voice = update.message.voice or update.message.audio
         fayl = await voice.get_file()
 

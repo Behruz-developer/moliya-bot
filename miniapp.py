@@ -9,12 +9,16 @@ import hmac
 import json
 import logging
 import os
+import re
 import time
+import datetime
 import urllib.parse
 
+import httpx
 from flask import Response, g, jsonify, request
 
 import data_store
+import xlsx_yoz
 from categories import KATEGORIYALAR, kat_kalit
 
 logger = logging.getLogger(__name__)
@@ -150,6 +154,35 @@ def _support_url() -> str:
     return "https://t.me/behruz_frontend"
 
 
+def _sana_yaroqli(v) -> str:
+    """YYYY-MM-DD shaklidagi sanani qaytaradi yoki bo'sh satr."""
+    s = str(v or "")[:10]
+    return s if re.match(r"^\d{4}-\d{2}-\d{2}$", s) else ""
+
+
+def _xlsx_yubor(chat_id, fayl_bytes: bytes, nomi: str, izoh: str) -> bool:
+    """Excel faylni bot orqali foydalanuvchi chatiga yuboradi."""
+    token = os.getenv("TELEGRAM_BOT_TOKEN", "").strip()
+    if not token:
+        return False
+    try:
+        javob = httpx.post(
+            f"https://api.telegram.org/bot{token}/sendDocument",
+            data={"chat_id": str(chat_id), "caption": izoh[:1000]},
+            files={"document": (
+                nomi, fayl_bytes,
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            )},
+            timeout=30,
+        )
+        if javob.status_code != 200:
+            logger.warning("sendDocument %s qaytardi: %s", javob.status_code, javob.text[:200])
+        return javob.status_code == 200
+    except Exception:
+        logger.exception("sendDocument ishlamadi")
+        return False
+
+
 def _html_olish() -> str:
     global _html_cache
     if _html_cache is None:
@@ -215,7 +248,12 @@ def register(app):
         sana = str(data.get("sana") or "")[:10]
         if sana:
             data_store.yozuvni_yangilash_id(user["id"], yozuv["id"], {"sana": sana})
-        yozuv = next(y for y in data_store.barchasi(user["id"]) if y.get("id") == yozuv["id"])
+        # next() StopIteration qaytarsa 500 bo'ladi (yozuv saqlangan holida) —
+        # topilmasa qo'shilgan yozuvni o'zini qaytaramiz
+        yozuv = next(
+            (y for y in data_store.barchasi(user["id"]) if y.get("id") == yozuv["id"]),
+            yozuv,
+        )
         return jsonify({"ok": True, "yozuv": _yozuv_json(yozuv)})
 
     @app.route("/api/transactions/<yozuv_id>", methods=["PATCH", "PUT"])
@@ -240,7 +278,12 @@ def register(app):
         ok = data_store.yozuvni_yangilash_id(user["id"], yozuv_id, o_zgarishlar)
         if not ok:
             return jsonify({"ok": False, "xato": "topilmadi"}), 404
-        yozuv = next(y for y in data_store.barchasi(user["id"]) if y.get("id") == yozuv_id)
+        yozuv = next(
+            (y for y in data_store.barchasi(user["id"]) if y.get("id") == yozuv_id),
+            None,
+        )
+        if yozuv is None:
+            return jsonify({"ok": False, "xato": "topilmadi"}), 404
         return jsonify({"ok": True, "yozuv": _yozuv_json(yozuv)})
 
     @app.route("/api/transactions/<yozuv_id>", methods=["DELETE"])
@@ -252,6 +295,51 @@ def register(app):
         if not ok:
             return jsonify({"ok": False, "xato": "topilmadi"}), 404
         return jsonify({"ok": True})
+
+    @app.route("/api/export", methods=["POST"])
+    def api_eksport():
+        """Filtrlangan yozuvlarni chiroyli .xlsx qilib bot chatiga yuboradi."""
+        user = _userdan()
+        if not user:
+            return _auth_401()
+        data = request.get_json(silent=True) or {}
+        tur = data.get("tur", "all")
+        if tur not in ("all", "income", "expense"):
+            return jsonify({"ok": False, "xato": "maydon"}), 400
+        dan = _sana_yaroqli(data.get("dan"))
+        gacha = _sana_yaroqli(data.get("gacha"))
+        if dan and gacha and dan > gacha:
+            return jsonify({"ok": False, "xato": "sana"}), 400
+
+        yozuvlar = data_store.barchasi(user["id"])
+        if tur != "all":
+            kerakli = "Daromad" if tur == "income" else "Harajat"
+            yozuvlar = [y for y in yozuvlar if y.get("turi") == kerakli]
+        if dan:
+            yozuvlar = [y for y in yozuvlar if str(y.get("sana", ""))[:10] >= dan]
+        if gacha:
+            yozuvlar = [y for y in yozuvlar if str(y.get("sana", ""))[:10] <= gacha]
+
+        if not yozuvlar:
+            return jsonify({"ok": False, "xato": "bosh"}), 400
+
+        yozuvlar.sort(key=lambda y: (str(y.get("sana", "")), str(y.get("vaqt", ""))))
+        qatorlar = [
+            [y.get("sana", ""), y.get("vaqt", ""), y.get("turi", ""),
+             y.get("kategoriya", ""), data_store._son_qil(y.get("summa", 0)),
+             y.get("izoh", "")]
+            for y in yozuvlar
+        ]
+        bugun = datetime.date.today().isoformat()
+        fayl = xlsx_yoz.yarat(
+            f"Moliya hisoboti — {bugun} ({len(yozuvlar)} ta yozuv)",
+            ["Sana", "Vaqt", "Turi", "Kategoriya", "Summa (so'm)", "Izoh"],
+            qatorlar,
+        )
+        nomi = f"moliya_{bugun}.xlsx"
+        if not _xlsx_yubor(user["id"], fayl, nomi, "📄 Moliya hisobotingiz — Excel faylda."):
+            return jsonify({"ok": False, "xato": "yuborilmadi"}), 500
+        return jsonify({"ok": True, "n": len(yozuvlar)})
 
     @app.errorhandler(404)
     def api_404(_e):

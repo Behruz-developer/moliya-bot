@@ -125,6 +125,18 @@ body{
 .blegend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
 .blegend i.inc{background:var(--green)}
 .blegend i.exp{background:var(--red)}
+/* --- Tez summalar (Payme/Click uslubi) --- */
+.qs{display:flex;gap:8px;flex-wrap:wrap;margin:-4px 0 8px}
+.qs button{border:1px solid #E4E2F3;background:#fff;color:var(--acc);font-weight:700;
+  font-size:13px;border-radius:12px;padding:8px 13px;cursor:pointer}
+.qs button:active{background:var(--purplebg)}
+/* --- Eksport oynasi --- */
+.egr{display:flex;gap:8px;flex-wrap:wrap;margin:2px 0 10px}
+.egr button{border:1px solid #E4E2F3;background:#fff;color:#4A4A63;font-size:13px;font-weight:600;
+  border-radius:12px;padding:8px 13px;cursor:pointer}
+.egr button.on{background:var(--acc);color:#fff;border-color:var(--acc)}
+.edates{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:2px 0 10px}
+.edates input{width:100%;margin-top:4px;padding:11px 12px;border:1.5px solid #E4E2F3;border-radius:12px;font:inherit;background:#fff}
 .card .chead{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:4px}
 .card .chead .tt{font-size:16px;font-weight:700}
 .card .chead .sb2{font-size:12.5px;color:var(--tx2);margin-top:2px}
@@ -291,6 +303,14 @@ ru: {
   m_settings: "Настройки приложения", m_settings_sub: "Язык, тема и уведомления",
   m_history: "История операций", m_history_sub: "Все доходы и расходы",
   m_support: "Помощь и поддержка", m_support_sub: "Частые вопросы и чат",
+  m_export: "Скачать в Excel", m_export_sub: "Файл придёт в чат бота",
+  exp_title: "Скачать данные", exp_type: "Какие операции", exp_period: "Период",
+  p_today: "Сегодня", p_week: "7 дней", p_month: "Этот месяц", p_prevmonth: "Прошлый месяц",
+  p_year: "Этот год", p_all: "Всё время", p_custom: "Свой период",
+  exp_from: "С", exp_to: "По", exp_send: "Скачать файл",
+  exp_sent: "✅ {n} записей отправлено файлом в чат бота",
+  exp_bosh: "Нет записей за выбранный период",
+  exp_err: "Ошибка отправки — попробуйте ещё раз",
   version: "Версия приложения 1.0.0",
   lang_title: "Язык", lang_saved: "Язык сохранён",
   notif_title: "Нет уведомлений", notif_sub: "Здесь пока пусто — уведомления появятся здесь.",
@@ -347,6 +367,14 @@ uz: {
   m_settings: "Ilova sozlamalari", m_settings_sub: "Til, mavzu va bildirishnomalar",
   m_history: "Operatsiyalar tarixi", m_history_sub: "Barcha daromad va xarajatlar",
   m_support: "Yordam va qo'llab-quvvatlash", m_support_sub: "Ko'p so'raladigan savollar va chat",
+  m_export: "Excel fayl qilib olish", m_export_sub: "Fayl bot chatiga keladi",
+  exp_title: "Ma'lumotlarni yuklab olish", exp_type: "Qaysi operatsiyalar", exp_period: "Davr",
+  p_today: "Bugun", p_week: "7 kun", p_month: "Shu oy", p_prevmonth: "O'tgan oy",
+  p_year: "Shu yil", p_all: "Barchasi", p_custom: "O'z davrim",
+  exp_from: "Dan", exp_to: "Gacha", exp_send: "Faylni yuklab olish",
+  exp_sent: "✅ {n} ta yozuv fayl bo'lib bot chatiga yuborildi",
+  exp_bosh: "Tanlangan davrda yozuv yo'q",
+  exp_err: "Yuborishda xatolik — qayta urinib ko'ring",
   version: "Ilova versiyasi 1.0.0",
   lang_title: "Til", lang_saved: "Til saqlandi",
   notif_title: "Bildirishnomalar yo'q", notif_sub: "Bu yerda hozircha bo'sh — bildirishnomalar shu yerda paydo bo'ladi.",
@@ -396,6 +424,7 @@ const ICONS = {
   bars: SV('<path d="M6 20V10"/><path d="M12 20V4"/><path d="M18 20v-7"/>'),
   gear: SV('<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1 1.55V21a2 2 0 1 1-4 0v-.09a1.7 1.7 0 0 0-1-1.55 1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.55-1H3a2 2 0 1 1 0-4h.09a1.7 1.7 0 0 0 1.55-1 1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-1.55V3a2 2 0 1 1 4 0v.09a1.7 1.7 0 0 0 1 1.55 1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.34 1.87v.08a1.7 1.7 0 0 0 1.55 1H21a2 2 0 1 1 0 4h-.09a1.7 1.7 0 0 0-1.55 1z"/>'),
   help: SV('<circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3"/><path d="M12 17h.01"/>'),
+  download: SV('<path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/>'),
   close: SV('<path d="M18 6L6 18"/><path d="M6 6l12 12"/>'),
   check: SV('<path d="M20 6L9 17l-5-5"/>'),
   trash: SV('<path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/>'),
@@ -428,6 +457,7 @@ let S = {
   lang: "ru", user: null, tx: [], cats: {}, hid: false,
   period: "month", homeType: "all", opsType: "all", opsCat: "all",
   homeQ: "", opsQ: "", editId: null, formType: "expense",
+  exTur: "all", exPreset: "month",
 };
 const $ = id => document.getElementById(id);
 const esc = s => String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
@@ -680,7 +710,7 @@ function renderOps(){
   $("opsChips").querySelectorAll("button.chip").forEach(b=>{
     b.onclick = () => { haptic("light");
       if (b.dataset.cat){ S.opsCat = S.opsCat===b.dataset.cat ? "all" : b.dataset.cat; }
-      else { S.opsType = b.dataset.v; }
+      else { S.opsType = b.dataset.v; S.opsCat = "all"; }  // tur o'zgarsa kategoriya mos kelmasin
       renderOps(); };
   });
   bindLongPress($("opsGroups"));
@@ -853,6 +883,11 @@ function renderProfile(){
         <div class="mt"><b>${esc(t("m_history"))}</b><span>${esc(t("m_history_sub"))}</span></div>
         <span class="chev">${ICONS.chev}</span>
       </div>
+      <div class="mrow" onclick="openExport()">
+        <div class="mic">${ICONS.download}</div>
+        <div class="mt"><b>${esc(t("m_export"))}</b><span>${esc(t("m_export_sub"))}</span></div>
+        <span class="chev">${ICONS.chev}</span>
+      </div>
       <div class="mrow" onclick="openSupport()">
         <div class="mic">${ICONS.help}</div>
         <div class="mt"><b>${esc(t("m_support"))}</b><span>${esc(t("m_support_sub"))}</span></div>
@@ -904,6 +939,67 @@ async function setLang(v){
   toast(t("lang_saved")); renderAll();
 }
 function openSupport(){ try{ tg && tg.openTelegramLink ? tg.openTelegramLink(SUPPORT_URL) : window.open(SUPPORT_URL,"_blank"); }catch(e){} }
+
+/* --- Eksport: filtrlangan Excel fayl bot chatiga yuboriladi --- */
+function exRange(){
+  const t = todayStr();
+  if (S.exPreset === "today") return [t, t];
+  if (S.exPreset === "week") return [addDays(t,-6), t];
+  if (S.exPreset === "month") return [t.slice(0,7)+"-01", t];
+  if (S.exPreset === "prevmonth"){
+    const d = dstr(t); const p = new Date(d.getFullYear(), d.getMonth()-1, 1);
+    const bosh = p.getFullYear()+"-"+String(p.getMonth()+1).padStart(2,"0")+"-01";
+    const oh = new Date(d.getFullYear(), d.getMonth(), 0);
+    const ox = oh.getFullYear()+"-"+String(oh.getMonth()+1).padStart(2,"0")+"-"+String(oh.getDate()).padStart(2,"0");
+    return [bosh, ox];
+  }
+  if (S.exPreset === "year") return [t.slice(0,4)+"-01-01", t];
+  if (S.exPreset === "custom") return [$("exDan").value || "", $("exGacha").value || ""];
+  return ["", ""];
+}
+function openExport(){
+  haptic("light");
+  showSheet(`<h3>${esc(t("exp_title"))}</h3>
+    <div class="form">
+      <label>${esc(t("exp_type"))}</label>
+      <div class="egr" id="exType">
+        ${[["all",t("all")],["income",t("incomes")],["expense",t("expenses")]].map(([v,l])=>
+          `<button data-v="${v}" class="${S.exTur===v?"on":""}">${esc(l)}</button>`).join("")}
+      </div>
+      <label>${esc(t("exp_period"))}</label>
+      <div class="egr" id="exPeriod">
+        ${[["today",t("p_today")],["week",t("p_week")],["month",t("p_month")],["prevmonth",t("p_prevmonth")],["year",t("p_year")],["all",t("p_all")],["custom",t("p_custom")]].map(([v,l])=>
+          `<button data-v="${v}" class="${S.exPreset===v?"on":""}">${esc(l)}</button>`).join("")}
+      </div>
+      <div class="edates" id="exDates" style="${S.exPreset==="custom"?"":"display:none"}">
+        <div><label>${esc(t("exp_from"))}</label><input id="exDan" type="date"></div>
+        <div><label>${esc(t("exp_to"))}</label><input id="exGacha" type="date"></div>
+      </div>
+      <button class="bigbtn" id="exSend" style="width:100%;margin-top:4px" onclick="doExport()">${esc(t("exp_send"))}</button>
+    </div>`);
+  $("exType").querySelectorAll("button").forEach(b=>{
+    b.onclick = () => { S.exTur = b.dataset.v; haptic("light");
+      $("exType").querySelectorAll("button").forEach(x=>x.classList.toggle("on", x===b)); };
+  });
+  $("exPeriod").querySelectorAll("button").forEach(b=>{
+    b.onclick = () => { S.exPreset = b.dataset.v; haptic("light");
+      $("exPeriod").querySelectorAll("button").forEach(x=>x.classList.toggle("on", x===b));
+      $("exDates").style.display = S.exPreset==="custom" ? "" : "none"; };
+  });
+}
+async function doExport(){
+  const btn = $("exSend");
+  if (!btn || btn.dataset.busy) return;
+  const [dan, gacha] = exRange();
+  if (S.exPreset === "custom" && (!dan || !gacha)){ toast(t("err")); return; }
+  btn.dataset.busy = "1"; btn.style.opacity = ".6";
+  try{
+    const d = await api("/api/export","POST",{tur:S.exTur, dan, gacha});
+    haptic("ok"); closeSheet(); toast(tpl("exp_sent",{n:d.n||0}));
+  }catch(e){
+    toast(e && e.message === "bosh" ? t("exp_bosh") : t("exp_err"));
+  }finally{ delete btn.dataset.busy; btn.style.opacity=""; }
+}
 
 /* --- Uzoq bosish / swipe -> action sheet --- */
 function bindLongPress(box){
@@ -960,6 +1056,7 @@ function openForm(id){
       </div>
       <label>${esc(t("f_amount"))}</label>
       <input id="fAmt" type="text" inputmode="numeric" autocomplete="off" placeholder="0" value="${y?fmt(y.summa):""}">
+      <div class="qs" id="fQuick"></div>
       <label>${esc(t("f_cat"))}</label>
       <div class="kgrid" id="fCats"></div>
       <label>${esc(t("f_comment"))}</label>
@@ -978,6 +1075,7 @@ function openForm(id){
     $("fCats").innerHTML = catKeys(S.formType).map(k=>
       `<button class="${selKat===k?"on":""}" data-k="${k}">${catIcon(k)} ${esc(catName(k))}</button>`).join("");
     $("fCats").querySelectorAll("button").forEach(b=>{ b.onclick = () => { selKat = b.dataset.k; haptic("light"); drawCats(); }; });
+    drawQuick();
   };
   $("ftExp").onclick = () => { S.formType="expense"; selKat="groceries"; haptic("light"); formTypeUi(); drawCats(); };
   $("ftInc").onclick = () => { S.formType="income"; selKat="salary"; haptic("light"); formTypeUi(); drawCats(); };
@@ -997,23 +1095,42 @@ function openForm(id){
     while (pos < out.length && cnt < caretDigits){ if (out[pos] !== " ") cnt++; pos++; }
     el.setSelectionRange(pos, pos);
   });
+  // Tez summalar: shu kategoriya bo'yicha eng ko'p kiritilgan summalar (tarixdan)
+  function drawQuick(){
+    const box = $("fQuick"); if (!box) return;
+    let pool = S.tx.filter(y=>y.turi===S.formType && y.kategoriya===selKat);
+    if (!pool.length) pool = S.tx.filter(y=>y.turi===S.formType);
+    const cnt = {};
+    pool.forEach(y=>{ cnt[y.summa] = (cnt[y.summa]||0)+1; });
+    const arr = Object.entries(cnt).map(([s,c])=>({s:+s,c}))
+      .sort((a,b)=>b.c-a.c||b.s-a.s).slice(0,4);
+    box.innerHTML = arr.map(x=>`<button type="button" data-s="${x.s}">${fmt(x.s)}</button>`).join("");
+    box.querySelectorAll("button").forEach(b=>{
+      b.onclick = () => { haptic("light"); const el=$("fAmt"); el.value = fmt(+b.dataset.s);
+        el.dispatchEvent(new Event("input")); };
+    });
+  }
+  S._drawQuick = drawQuick;
   S._selKat = () => selKat;
 }
 async function saveForm(){
+  if (S._saving) return;  // ikki marta bosishdan himoya (takroriy yozuv chiqmasin)
   const summa = parseInt(($("fAmt").value || "").replace(/\D/g, ""), 10) || 0;
   if (!summa || summa <= 0){ toast(t("err")); return; }
-  const payload = {
-    turi: S.formType,
-    kategoriya: S._selKat ? S._selKat() : null,
-    summa,
-    izoh: $("fIzoh").value.trim(),
-    sana: $("fSana").value || todayStr(),
-  };
+  S._saving = true;
   try{
+    const payload = {
+      turi: S.formType,
+      kategoriya: S._selKat ? S._selKat() : null,
+      summa,
+      izoh: $("fIzoh").value.trim(),
+      sana: $("fSana").value || todayStr(),
+    };
     if (S.editId) await api("/api/transactions/"+S.editId, "PATCH", payload);
     else await api("/api/transactions", "POST", payload);
     haptic("ok"); closeSheet(); toast(t("saved")); await load();
   }catch(e){ toast(t("err")); }
+  finally{ S._saving = false; }
 }
 
 /* ============================ TABLAR + ISHGA TUSHIRISH ============================ */
