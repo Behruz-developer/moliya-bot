@@ -6,7 +6,8 @@
     "kategoriya": "Oylik",
     "summa": "4 000 000 so'm",
     "izoh": "Oylik maosh olindi",
-    "asl_matn": "4 million oylik oldim"
+    "asl_matn": "4 million oylik oldim",
+    "id": "87da0865"
   },
   {
     "sana": "2026-09-30",
@@ -15,7 +16,8 @@
     "kategoriya": "Oylik",
     "summa": "4 000 000 so'm",
     "izoh": "Bugun oylik maosh olindi",
-    "asl_matn": "Bugun 4 million som oylik oldim"
+    "asl_matn": "Bugun 4 million som oylik oldim",
+    "id": "bde25c5f"
   },
   {
     "sana": "2026-09-30",
@@ -24,7 +26,8 @@
     "kategoriya": "Qarz/Kredit",
     "summa": "2 000 000 so'm",
     "izoh": "Qarzni qaytarish",
-    "asl_matn": "2 million so'm qarzim bor edi o'sha qarzimni berdim"
+    "asl_matn": "2 million so'm qarzim bor edi o'sha qarzimni berdim",
+    "id": "ef73b0b7"
   },
   {
     "sana": "2026-09-30",
@@ -33,7 +36,8 @@
     "kategoriya": "Transport",
     "summa": "200 000 so'm",
     "izoh": "Benzin sotib olish",
-    "asl_matn": "200 ming so'mga benzin quydim"
+    "asl_matn": "200 ming so'mga benzin quydim",
+    "id": "a9eb4de6"
   },
   {
     "sana": "2026-09-30",
@@ -42,7 +46,8 @@
     "kategoriya": "Uy-ro'zg'or",
     "summa": "300 000 so'm",
     "izoh": "Uyga ro'zg'or xaridi",
-    "asl_matn": "Uyga 300000 so'mlik rozgor qildim"
+    "asl_matn": "Uyga 300000 so'mlik rozgor qildim",
+    "id": "b16e9460"
   },
   {
     "sana": "2026-10-01",
@@ -51,7 +56,8 @@
     "kategoriya": "Oylik",
     "summa": "2 000 000 so'm",
     "izoh": "Bugun oylik maosh olindi",
-    "asl_matn": "Bugun 2 million so'm oylik oldim"
+    "asl_matn": "Bugun 2 million so'm oylik oldim",
+    "id": "afbaa24b"
   },
   {
     "sana": "2026-10-01",
@@ -60,7 +66,8 @@
     "kategoriya": "Oziq-ovqat",
     "summa": "50 000 so'm",
     "izoh": "Nonushta uchun qilingan harajat",
-    "asl_matn": "Bugun 50 ming so'm zavtrakka ishlatdim."
+    "asl_matn": "Bugun 50 ming so'm zavtrakka ishlatdim.",
+    "id": "b3fcff5d"
   },
   {
     "sana": "2026-10-01",
@@ -69,6 +76,7 @@
     "kategoriya": "Oziq-ovqat",
     "summa": "200 000 so'm",
     "izoh": "Oziq-ovqat uchun xarajat",
-    "asl_matn": "Oziq-ovqat uchun 200 ming so'm sarfladim"
+    "asl_matn": "Oziq-ovqat uchun 200 ming so'm sarfladim",
+    "id": "a158c663"
   }
 ]
