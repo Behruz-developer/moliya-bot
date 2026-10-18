@@ -18,5 +18,15 @@
     "summa": 1500000,
     "izoh": "Ro'zg'orlik xaridi",
     "asl_matn": "Bir yarim million ro'zg'orlik qildim"
+  },
+  {
+    "id": "1f39089d",
+    "sana": "2026-10-18",
+    "vaqt": "21:49",
+    "turi": "Harajat",
+    "kategoriya": "Transport",
+    "summa": 150000,
+    "izoh": "Benzin uchun xarajat",
+    "asl_matn": "150 ming benzinga ishlatdim"
   }
 ]
