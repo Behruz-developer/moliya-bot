@@ -58,6 +58,7 @@ def _fmt(n) -> str:
 
 _oxirgi_sinxron = [0.0]
 _sinxron_qulf = threading.Lock()
+_sinxron_holat = {"vaqt": "—", "yangi": False}
 
 
 def gitdan_sinxronlash() -> bool:
@@ -75,6 +76,7 @@ def gitdan_sinxronlash() -> bool:
         if subprocess.run(
             ["git", "fetch", "origin", "main"], capture_output=True, timeout=25
         ).returncode != 0:
+            _sinxron_holat["vaqt"] = datetime.now().strftime("%H:%M:%S") + " (xato)"
             return False
         # Lokal o'zgarish bo'lsa — avval tarixga saqlaymiz (hech narsa yo'qolmasin)
         st = subprocess.run(
@@ -110,8 +112,11 @@ def gitdan_sinxronlash() -> bool:
                     capture_output=True, timeout=10,
                 ).returncode == 0:
                     olindi = True
+        _sinxron_holat["vaqt"] = datetime.now().strftime("%H:%M:%S")
+        _sinxron_holat["yangi"] = olindi
         return olindi
     except Exception:
+        _sinxron_holat["vaqt"] = datetime.now().strftime("%H:%M:%S") + " (xato)"
         return False
 
 
@@ -220,6 +225,7 @@ tr.daromad td:nth-child(4) { color: #4ade80; }
 <div class="yuqori">
   <h1>📊 Moliya bot — Admin Dashboard</h1>
   <div class="kichik">Jarayon: @@Hozir@@ · har @@REFRESH@@ sekundda avtomatik yangilanadi · faqat o'qish rejimi</div>
+  <div class="kichik">@@Sinxron@@</div>
   <div class="statlar-yuqori">
     <span>👥 <b>@@Userlar@@</b> foydalanuvchi</span>
     <span>🧾 <b>@@Yozuvlar@@</b> yozuv</span>
@@ -238,6 +244,10 @@ def index():
     # GitHub'dan eng yangi ma'lumotlarni olib kelamiz (serverda yangi user
     # ro'yxatdan o'tgan bo'lsa — darhol shu yerda paydo bo'ladi)
     gitdan_sinxronlash()
+    sinxron_matn = (
+        f"🔄 GitHub bilan sinxron: {_sinxron_holat['vaqt']} · "
+        f"yangi ma'lumot: {'bor ✅' if _sinxron_holat['yangi'] else 'yo‘q'}"
+    )
     userlar = data_store.foydalanuvchilar_royxati()
     # Eng so'nggi faol birinchi
     userlar.sort(key=lambda x: (x["oxirgi"] or ""), reverse=True)
@@ -253,6 +263,7 @@ def index():
     return (
         HTML_SHABLON
         .replace("@@Hozir@@", hozir)
+        .replace("@@Sinxron@@", sinxron_matn)
         .replace("@@Kartalar@@", kartalar)
         .replace("@@Userlar@@", str(len(userlar)))
         .replace("@@Yozuvlar@@", str(jami_yozuv))

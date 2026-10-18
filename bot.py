@@ -300,11 +300,24 @@ def _til(update) -> str:
     # Har bir user har qanday muloqotda registratsiya/yangilash (bir kunda 1 marta yozadi)
     try:
         u = update.effective_user
-        data_store.user_faollik(
-            update.effective_chat.id,
+        chat_id = update.effective_chat.id
+        profil, yangi_user = data_store.user_faollik(
+            chat_id,
             " ".join(x for x in (u.first_name, u.last_name) if x).strip(),
             u.username or "",
         )
+        # Yangi user ro'yxatdan o'tsa — bot egasiga xabar yuboramiz
+        if yangi_user and str(chat_id) != OWNER_ID:
+            try:
+                username = f" @{profil['username']}" if profil.get("username") else ""
+                update.get_bot().send_message(
+                    int(OWNER_ID),
+                    f"🎉 Botga yangi foydalanuvchi qo'shildi!\n"
+                    f"👤 {profil.get('ism') or '—'}{username}\n"
+                    f"🆔 {chat_id}\n📅 {profil.get('birinchi', '')[:10]}",
+                )
+            except Exception:
+                pass
     except Exception:
         pass
     return data_store.til_olish(update.effective_chat.id)
@@ -508,6 +521,7 @@ async def foydalanuvchilar(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
+    u = update.effective_user
     u = update.effective_user
     data_store.user_faollik(
         chat_id,

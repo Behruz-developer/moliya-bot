@@ -309,13 +309,16 @@ def user_olish(chat_id) -> dict:
     return dict(mavjud)
 
 
-def user_faollik(chat_id, ism: str = "", username: str = "", manba: str = "bot") -> dict:
-    """User registratsiyasi/yangilash. Bir kunda bir marta yozadi (spam yo'q)."""
+def user_faollik(chat_id, ism: str = "", username: str = "", manba: str = "bot"):
+    """User registratsiyasi/yangilash. Bir kunda bir marta yozadi (spam yo'q).
+    Qaytaradi: (profil, yangi_user) — yangi_user=True bo'lsa bu user
+    birinchi marta ro'yxatdan o'tdi (bot egasiga xabar berish uchun)."""
     hozir_s = datetime.datetime.now(ZoneInfo("Asia/Tashkent")).isoformat(timespec="seconds")
     users = _users_yukla()
     mavjud = users.get(str(chat_id), {})
     if isinstance(mavjud, str):
         mavjud = {"til": mavjud}
+    yangi_user = not mavjud.get("birinchi")
     o_zgar = False
 
     ism = (ism or "").strip()
@@ -339,7 +342,7 @@ def user_faollik(chat_id, ism: str = "", username: str = "", manba: str = "bot")
     if o_zgar:
         users[str(chat_id)] = mavjud
         _users_saqla(users)
-    return mavjud
+    return mavjud, yangi_user
 
 
 def foydalanuvchilar_royxati() -> list:
