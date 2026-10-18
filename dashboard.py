@@ -20,6 +20,7 @@ Xavfsizlik:
 """
 import json
 import os
+import subprocess
 import threading
 import urllib.request
 from datetime import datetime
@@ -53,6 +54,45 @@ REFRESH = int(os.getenv("DASH_REFRESH", 30))
 
 def _fmt(n) -> str:
     return f"{data_store._son_qil(n):,}".replace(",", " ")
+
+
+_oxirgi_sinxron = [0.0]
+_sinxron_qulf = threading.Lock()
+
+
+def gitdan_sinxronlash() -> bool:
+    """GitHub'dagi eng yangi data/ fayllarini lokalga olib keladi.
+    Bot serverda (Render) yangi user ro'yxatdan o'tsa va zaxiralarsa —
+    shu funksiya ularni dashboard'ga yetkazadi. Sekundiga 1 martadan ko'p emas."""
+    import time
+    with _sinxron_qulf:
+        if time.time() - _oxirgi_sinxron[0] < 20:
+            return False
+        _oxirgi_sinxron[0] = time.time()
+    try:
+        if subprocess.run(
+            ["git", "fetch", "origin", "main"], capture_output=True, timeout=25
+        ).returncode != 0:
+            return False
+        # Lokal o'zgarish bo'lsa — avval tarixga saqlaymiz (hech narsa yo'qolmasin)
+        st = subprocess.run(
+            ["git", "status", "--porcelain", "--", "data"],
+            capture_output=True, text=True, timeout=10,
+        ).stdout.strip()
+        if st:
+            subprocess.run(["git", "add", "data"], capture_output=True, timeout=10)
+            subprocess.run(
+                ["git", "commit", "-m", "Dashboard: lokal data zaxirasi"],
+                capture_output=True, timeout=10,
+            )
+        # Remotdan faqat data/ papkasini olamiz
+        r = subprocess.run(
+            ["git", "checkout", "origin/main", "--", "data"],
+            capture_output=True, timeout=15,
+        )
+        return r.returncode == 0
+    except Exception:
+        return False
 
 
 def eski_profillarni_toldir():
@@ -175,6 +215,9 @@ tr.daromad td:nth-child(4) { color: #4ade80; }
 
 @app.route("/")
 def index():
+    # GitHub'dan eng yangi ma'lumotlarni olib kelamiz (serverda yangi user
+    # ro'yxatdan o'tgan bo'lsa — darhol shu yerda paydo bo'ladi)
+    gitdan_sinxronlash()
     userlar = data_store.foydalanuvchilar_royxati()
     # Eng so'nggi faol birinchi
     userlar.sort(key=lambda x: (x["oxirgi"] or ""), reverse=True)
