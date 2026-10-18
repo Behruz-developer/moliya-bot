@@ -78,6 +78,23 @@ Server qayta yoqilganda bot ham avtomatik ishga tushishi uchun `systemd` xizmati
 sifatida sozlashni tavsiya qilaman — buni keyingi bosqichda (AI integratsiyalarini
 kuchaytirishdan oldin yoki keyin) birga sozlab beraman, agar xohlasangiz.
 
+## Lokal Admin Dashboard (faqat siz ko'rasiz)
+
+Botdagi barcha ro'yxatdan o'tgan foydalanuvchilar va ularning barcha
+kirim/chiqimlarini kompyuteringizda ko'rish uchun:
+
+```bash
+python3 dashboard.py
+# keyin brauzerda oching: http://127.0.0.1:5050
+```
+
+- Faqat `127.0.0.1`da ishlaydi — internetdan hech kim ko'ra olmaydi
+- Faqat o'qish rejimi — ma'lumotni buzolmaydi
+- Eski userlar ismlari avtomatik to'ldiriladi (Telegram getChat)
+- Har bir user kartasi: yozuvlar soni, daromad/xarajat/balans, barcha
+  yozuvlar to'liq jadvalda (sana, vaqt, turi, kategoriya, summa, izoh,
+  asl matn)
+
 ## Keyingi bosqich
 
 Bot va Sheets integratsiyasi tayyor bo'lgach, quyidagilarni qo'shishimiz mumkin:
