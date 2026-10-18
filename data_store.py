@@ -10,7 +10,10 @@ import uuid
 from collections import defaultdict
 from zoneinfo import ZoneInfo
 
+import gh_zaxira
+
 DATA_JILD = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
+_REPO_ROOT = os.path.dirname(os.path.abspath(__file__))
 _qulf = threading.Lock()
 
 
@@ -28,8 +31,19 @@ def _yukla(chat_id) -> list:
 
 
 def _saqla(chat_id, yozuvlar: list):
-    with open(_fayl_yuli(chat_id), "w", encoding="utf-8") as f:
+    yuli = _fayl_yuli(chat_id)
+    with open(yuli, "w", encoding="utf-8") as f:
         json.dump(yozuvlar, f, ensure_ascii=False, indent=2)
+    # GitHub repoga zaxira (Render ephemeral disk muammosiga qarshi)
+    try:
+        rel = os.path.relpath(yuli, _REPO_ROOT)
+        gh_zaxira.fon_zaxira(
+            rel,
+            json.dumps(yozuvlar, ensure_ascii=False, indent=2).encode("utf-8"),
+            f"Moliya: {chat_id} yozuvlari zaxiralandi",
+        )
+    except Exception:
+        pass
 
 
 def yozuv_qosh(chat_id, natija: dict):
@@ -151,12 +165,6 @@ def tozalash(chat_id) -> int:
         soni = len(yozuvlar)
         _saqla(chat_id, [])
         return soni
-def tozalash(chat_id) -> int:
-    with _qulf:
-        yozuvlar = _yukla(chat_id)
-        soni = len(yozuvlar)
-        _saqla(chat_id, [])
-        return soni
 
 
 def _son_qil(n) -> int:
@@ -256,6 +264,15 @@ def _users_saqla(users: dict):
     os.makedirs(DATA_JILD, exist_ok=True)
     with open(USERS_JSON, "w", encoding="utf-8") as f:
         json.dump(users, f, ensure_ascii=False, indent=2)
+    try:
+        rel = os.path.relpath(USERS_JSON, _REPO_ROOT)
+        gh_zaxira.fon_zaxira(
+            rel,
+            json.dumps(users, ensure_ascii=False, indent=2).encode("utf-8"),
+            "Moliya: foydalanuvchi sozlamalari zaxiralandi",
+        )
+    except Exception:
+        pass
 
 
 def til_olish(chat_id) -> str:

@@ -60,10 +60,28 @@ health (Здоровье, #FF7675), education (Образование, #6C5CE7),
 other_expense (Другое, #B8B5E3).
 Eski nomlar (`Одежда`, `Коммунальные услуги` va h.k.) avtomatik mapping qilinadi.
 
+## Muhim: ma'lumotlar GitHub orqali saqlanadi (deploy xavfsizligi)
+
+Render'da ephemeral disk bo'lgani uchun har deploy runtime fayllarni tozalaydi.
+Buni hal qilish uchun har bir yozuv o'zgarishidan keyin `data/<chat_id>.json` va
+`data/users.json` **avtomatik GitHub repoga commit qilinadi** (`gh_zaxira.py`).
+
+Sozlash (bir marta):
+1. GitHub → Settings → Developer settings → Fine-grained personal access tokens
+   → yangi token: Repository access = faqat `moliya-bot`, Permissions = **Contents: Read and write**.
+2. Render → Environment → qo'shing:
+   - `GITHUB_TOKEN` = token
+   - `GITHUB_REPO` = `Behruz-developer/moliya-bot`
+3. Render → Settings → **Auto-Deploy: OFF** qilib qo'ying (har yozuv deploy qilib botni
+   qayta ishga tushirmasin — kodni yangilaganda Manual Deploy bering).
+
+Shundan so'ng: deploylar ma'lumotlarni o'chirmaydi — repoda eng oxirgi holat saqlanadi.
+
 ## Muhit o'zgaruvchilari (.env)
 
 - `TELEGRAM_BOT_TOKEN` — majburiy (imzo va getMe uchun).
 - `PUBLIC_URL` yoki `RENDER_EXTERNAL_URL` — Mini App URL (`{PUBLIC_URL}/app`). HTTPS bo'lishi shart!
+- `GITHUB_TOKEN`, `GITHUB_REPO` — ma'lumotlarni GitHub'ga zaxiralash uchun (yuqoridagi bo'limga qarang)
 - `SUPPORT_URL` (ixtiyoriy) — «Помощь и поддержка» havolasi; bo'lmasa `https://t.me/behruz_frontend` ochiladi.
 
 ## Ishga tushirish (lokal)

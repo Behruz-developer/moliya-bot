@@ -166,6 +166,8 @@ T = {
         "his_balans": "💼 Balans", "his_soni": "🔢 Yozuvlar soni: {n} ta",
         "his_kat": "📂 Kategoriyalar bo'yicha:",
         "his_takror": "⚠️ Xuddi shunday yozuv hozirgina qo'shilgan — takroriy xabar saqlanmadi.",
+        "id_mening": "🆔 Sizning ID raqamingiz:",
+        "id_username": "👤 Username:",
     },
     "ru": {
         "salom_tanlash": "Ассалому алайкум! 👋\nПожалуйста, выберите язык 👇",
@@ -270,6 +272,8 @@ T = {
         "his_balans": "💼 Баланс", "his_soni": "🔢 Кол-во записей: {n}",
         "his_kat": "📂 По категориям:",
         "his_takror": "⚠️ Такая же запись только что добавлена — повторное сообщение не сохранено.",
+        "id_mening": "🆔 Ваш ID:",
+        "id_username": "👤 Имя пользователя:",
     },
 }
 
@@ -448,6 +452,16 @@ async def _natijani_saqla_va_javob_ber(update, context, natija: dict, til: str):
 
 
 # ============================ HANDLERLAR ============================
+
+async def mening_id(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """/id — foydalanuvchi ID va username (zaxira/tiklash uchun)."""
+    til = _til(update)
+    u = update.effective_user
+    await update.message.reply_text(
+        f"{T[til]['id_mening']} {update.effective_chat.id}\n"
+        f"{T[til]['id_username']} @{u.username or '—'}"
+    )
+
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
@@ -783,6 +797,7 @@ def asosiy():
     app.add_handler(CommandHandler("tuzatish_bekor", tuzatish_bekor))
     app.add_handler(CommandHandler("sahifa", jadval))
     app.add_handler(CommandHandler("jadval", jadval))  # eski buyruq ham ishlaydi
+    app.add_handler(CommandHandler("id", mening_id))
     app.add_handler(CallbackQueryHandler(til_callback, pattern="^til:"))
     app.add_handler(CallbackQueryHandler(tozalash_callback, pattern="^tozalash_"))
     app.add_handler(CallbackQueryHandler(yozuv_callback, pattern="^(ochirish|tuzatish)"))
