@@ -1,5 +1,17 @@
 {
   "1144941995": {
-    "til": "uz"
+    "til": "uz",
+    "ism": "B",
+    "birinchi": "2026-10-18T20:16:24+05:00",
+    "oxirgi": "2026-10-18T20:16:24+05:00",
+    "manba": "getchat"
+  },
+  "7056525367": {
+    "til": "ru",
+    "ism": "Behruz",
+    "username": "behruz_frontend",
+    "birinchi": "2026-10-18T20:17:10+05:00",
+    "oxirgi": "2026-10-18T20:17:10+05:00",
+    "manba": "getchat"
   }
 }
