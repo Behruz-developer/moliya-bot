@@ -28,5 +28,15 @@
     "summa": 150000,
     "izoh": "Benzin uchun xarajat",
     "asl_matn": "150 ming benzinga ishlatdim"
+  },
+  {
+    "id": "979197d7",
+    "sana": "2026-10-18",
+    "vaqt": "21:49",
+    "turi": "Harajat",
+    "kategoriya": "Kiyim-kechak",
+    "summa": 1200000,
+    "izoh": "Kiyim sotib olindi",
+    "asl_matn": "1 million 200 mingga kiyim oldim"
   }
 ]
