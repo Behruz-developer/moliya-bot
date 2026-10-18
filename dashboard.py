@@ -29,9 +29,15 @@ from flask import Flask
 
 import data_store
 
+# Lokal dashboard'da Mini App'ni ham brauzerda ko'rish mumkin (Telegram'siz):
+# http://127.0.0.1:5050/app — faqat 127.0.0.1, internetga ochiq emas
+os.environ.setdefault("LOCAL_DEV", "1")
+import miniapp
+
 load_dotenv()
 
 app = Flask(__name__)
+miniapp.register(app)
 
 DASH_PORT = int(os.getenv("DASH_PORT", 5050))
 
@@ -192,5 +198,6 @@ if __name__ == "__main__":
     # Eski userlar profilini fon rejimida to'ldirish (botni bloklamasin)
     threading.Thread(target=eski_profillarni_toldir, daemon=True).start()
     print(f"📊 Admin Dashboard: http://127.0.0.1:{DASH_PORT}")
+    print(f"📱 Mini App (brauzerda):  http://127.0.0.1:{DASH_PORT}/app")
     print("   (faqat shu kompyuterdan ochiladi — yopish: Ctrl+C)")
     app.run(host="127.0.0.1", port=DASH_PORT, debug=False)

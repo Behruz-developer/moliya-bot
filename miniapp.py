@@ -88,13 +88,38 @@ def _initdanni_tekshir(init_data: str):
     return user, ""
 
 
+def _local_dev_ruxsat() -> bool:
+    """Lokal dev rejimi: faqat LOCAL_DEV=1 VA so'rov 127.0.0.1'dan kelsa.
+    Render'da (internetga ochiq serverda) bu hech qachon ishlamaydi."""
+    if os.getenv("LOCAL_DEV", "").strip() != "1":
+        return False
+    return request.remote_addr in ("127.0.0.1", "::1")
+
+
 def _userdan():
     """So'rov sarlavhasini (Authorization: tma <initData>) tekshiradi yoki None."""
     auth = request.headers.get("Authorization", "")
     init_data = auth[4:] if auth.startswith("tma ") else ""
     user, sabab = _initdanni_tekshir(init_data)
+    if user:
+        g.auth_sabab = ""
+        return user
     g.auth_sabab = sabab
-    return user
+    # LOKAL DEV: brauzerda (Telegram'siz) sinab ko'rish — http://127.0.0.1:5050/app?id=<ID>
+    if _local_dev_ruxsat():
+        sid = str(request.args.get("id", "")).strip() or os.getenv("OWNER_ID", "1144941995").strip()
+        if sid.isdigit():
+            profil = data_store.user_olish(sid)
+            lang = profil.get("til") or ""
+            user = {
+                "id": int(sid),
+                "first_name": profil.get("ism") or "Lokal",
+                "username": profil.get("username", ""),
+                "language_code": lang if lang else "",
+            }
+            g.auth_sabab = "lokal-dev"
+            return user
+    return None
 
 
 def _auth_401():

@@ -86,6 +86,8 @@ kirim/chiqimlarini kompyuteringizda ko'rish uchun:
 ```bash
 python3 dashboard.py
 # keyin brauzerda oching: http://127.0.0.1:5050
+# Mini App'ni ham brauzerda ko'rish mumkin: http://127.0.0.1:5050/app
+#   (boshqa user sifatida: http://127.0.0.1:5050/app?id=<ID>)
 ```
 
 - Faqat `127.0.0.1`da ishlaydi — internetdan hech kim ko'ra olmaydi
