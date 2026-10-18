@@ -276,15 +276,94 @@ def _users_saqla(users: dict):
 
 
 def til_olish(chat_id) -> str:
-    til = _users_yukla().get(str(chat_id), {}).get("til", DEFAULT_TIL)
+    """Eski {"til": "uz"} ham, eski-oddiy "uz" (str) format ham moslashadi."""
+    mavjud = _users_yukla().get(str(chat_id), {})
+    til = mavjud.get("til") if isinstance(mavjud, dict) else mavjud
     return til if til in ("uz", "ru") else DEFAULT_TIL
 
 
 def til_saqla(chat_id, til: str):
+    """Tilni saqlaydi — user rejestri ma'lumotlarini (ism, sana...) yo'qotmaydi."""
     if til not in ("uz", "ru"):
         til = DEFAULT_TIL
     with _qulf:
         users = _users_yukla()
-        users[str(chat_id)] = {"til": til}
+        mavjud = users.get(str(chat_id), {})
+        if isinstance(mavjud, str):
+            mavjud = {"til": mavjud}
+        mavjud["til"] = til
+        users[str(chat_id)] = mavjud
         _users_saqla(users)
+
+
+# ============================ FOYDALANUVCHI REGISTRI ============================
+# Har bir user to'liq saqlanadi: ID, ism, username, til, manba (bot/miniapp),
+# birinchi ko'rilgan sana, oxirgi faollik. /foydalanuvchilar buyrug'i orqali
+# bot egasi barcha userlarni yozuvlari bilan birga ko'rishi mumkin.
+
+def user_olish(chat_id) -> dict:
+    """User ma'lumotlari (eski {"til": ...} va eski-oddiy str format ham moslashadi)."""
+    mavjud = _users_yukla().get(str(chat_id), {})
+    if isinstance(mavjud, str):
+        mavjud = {"til": mavjud}
+    return dict(mavjud)
+
+
+def user_faollik(chat_id, ism: str = "", username: str = "", manba: str = "bot") -> dict:
+    """User registratsiyasi/yangilash. Bir kunda bir marta yozadi (spam yo'q)."""
+    hozir_s = datetime.datetime.now(ZoneInfo("Asia/Tashkent")).isoformat(timespec="seconds")
+    users = _users_yukla()
+    mavjud = users.get(str(chat_id), {})
+    if isinstance(mavjud, str):
+        mavjud = {"til": mavjud}
+    o_zgar = False
+
+    ism = (ism or "").strip()
+    if ism and mavjud.get("ism") != ism:
+        mavjud["ism"] = ism
+        o_zgar = True
+    un = (username or "").strip().lstrip("@")
+    if un and mavjud.get("username", "") != un:
+        mavjud["username"] = un
+        o_zgar = True
+    if not mavjud.get("birinchi"):
+        mavjud["birinchi"] = hozir_s
+        o_zgar = True
+    if (mavjud.get("oxirgi") or "")[:10] != hozir_s[:10]:
+        mavjud["oxirgi"] = hozir_s
+        o_zgar = True
+    if not mavjud.get("manba"):
+        mavjud["manba"] = manba
+        o_zgar = True
+
+    if o_zgar:
+        users[str(chat_id)] = mavjud
+        _users_saqla(users)
+    return mavjud
+
+
+def foydalanuvchilar_royxati() -> list:
+    """Registratsiyadan o'tgan barcha userlar + ularning hisob-kitobi."""
+    users = _users_yukla()
+    natija = []
+    for chat_id, mavjud in sorted(users.items()):
+        if isinstance(mavjud, str):
+            mavjud = {"til": mavjud}
+        yozuvlar = _yukla(chat_id)
+        dar = sum(_son_qil(y.get("summa", 0)) for y in yozuvlar if y.get("turi") == "Daromad")
+        har = sum(_son_qil(y.get("summa", 0)) for y in yozuvlar if y.get("turi") == "Harajat")
+        natija.append({
+            "chat_id": chat_id,
+            "ism": mavjud.get("ism", ""),
+            "username": mavjud.get("username", ""),
+            "til": mavjud.get("til", DEFAULT_TIL),
+            "birinchi": mavjud.get("birinchi", ""),
+            "oxirgi": mavjud.get("oxirgi", ""),
+            "manba": mavjud.get("manba", ""),
+            "yozuvlar": len(yozuvlar),
+            "daromad": dar,
+            "harajat": har,
+            "balans": dar - har,
+        })
+    return natija
 

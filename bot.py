@@ -55,6 +55,9 @@ BASE_URL = os.getenv("PUBLIC_URL", os.getenv("RENDER_EXTERNAL_URL", "http://loca
 
 MINIAPP_URL = f"{BASE_URL}/app"
 
+# Bot egasi (env'da OWNER_ID bo'lsa — u; yo'qsa default ID)
+OWNER_ID = os.getenv("OWNER_ID", "1144941995").strip()
+
 
 def _sahifa_link(chat_id) -> str:
     return f"{BASE_URL}/u/{chat_id}"
@@ -168,6 +171,10 @@ T = {
         "his_takror": "⚠️ Xuddi shunday yozuv hozirgina qo'shilgan — takroriy xabar saqlanmadi.",
         "id_mening": "🆔 Sizning ID raqamingiz:",
         "id_username": "👤 Username:",
+        "fo_sarlavha": "👥 Ro'yxatdan o'tgan foydalanuvchilar ({n} ta):",
+        "fo_faqt": "⛔ Bu buyruq faqat bot egasi uchun.",
+        "fo_yozuvlar": "🧾",
+        "fo_birinchi": "📅",
     },
     "ru": {
         "salom_tanlash": "Ассалому алайкум! 👋\nПожалуйста, выберите язык 👇",
@@ -274,6 +281,10 @@ T = {
         "his_takror": "⚠️ Такая же запись только что добавлена — повторное сообщение не сохранено.",
         "id_mening": "🆔 Ваш ID:",
         "id_username": "👤 Имя пользователя:",
+        "fo_sarlavha": "👥 Зарегистрированные пользователи ({n}):",
+        "fo_faqt": "⛔ Эта команда доступна только владельцу бота.",
+        "fo_yozuvlar": "🧾",
+        "fo_birinchi": "📅",
     },
 }
 
@@ -286,6 +297,16 @@ MENYU_TUGMALARI = {T[til][k] for til in T for k in MENYU_KALITLARI}
 
 
 def _til(update) -> str:
+    # Har bir user har qanday muloqotda registratsiya/yangilash (bir kunda 1 marta yozadi)
+    try:
+        u = update.effective_user
+        data_store.user_faollik(
+            update.effective_chat.id,
+            " ".join(x for x in (u.first_name, u.last_name) if x).strip(),
+            u.username or "",
+        )
+    except Exception:
+        pass
     return data_store.til_olish(update.effective_chat.id)
 
 
@@ -463,8 +484,36 @@ async def mening_id(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
 
+async def foydalanuvchilar(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """/foydalanuvchilar — bot egasi barcha ro'yxatdan o'tgan userlarni
+    to'liq ma'lumotlari bilan ko'radi (ID, ism, til, yozuvlar, balans)."""
+    til = _til(update)
+    t = T[til]
+    if str(update.effective_chat.id) != OWNER_ID:
+        await update.message.reply_text(t["fo_faqt"])
+        return
+    royxat = data_store.foydalanuvchilar_royxati()
+    q = [t["fo_sarlavha"].format(n=len(royxat))]
+    for i, x in enumerate(royxat, 1):
+        username = f" @{x['username']}" if x["username"] else ""
+        q.append(
+            f"\n{i}) {x['ism'] or '—'}{username}\n"
+            f"   🆔 {x['chat_id']} · 🌐 {x['til']} · 📡 {x['manba'] or 'bot'}\n"
+            f"   🧾 {x['yozuvlar']} · 🟢 {data_store.fmt(x['daromad'])} · "
+            f"🔴 {data_store.fmt(x['harajat'])} · 💼 {data_store.fmt(x['balans'])} {t['som']}\n"
+            f"   {t['fo_birinchi']} {x['birinchi'][:10] or '—'} → {x['oxirgi'][:10] or '—'}"
+        )
+    await update.message.reply_text("\n".join(q))
+
+
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
+    u = update.effective_user
+    data_store.user_faollik(
+        chat_id,
+        " ".join(x for x in (u.first_name, u.last_name) if x).strip(),
+        u.username or "",
+    )
     users = data_store._users_yukla()
     if str(chat_id) not in users:
         # Til hali tanlanmagan — so'raymiz
@@ -798,6 +847,8 @@ def asosiy():
     app.add_handler(CommandHandler("sahifa", jadval))
     app.add_handler(CommandHandler("jadval", jadval))  # eski buyruq ham ishlaydi
     app.add_handler(CommandHandler("id", mening_id))
+    app.add_handler(CommandHandler("foydalanuvchilar", foydalanuvchilar))
+    app.add_handler(CommandHandler("users", foydalanuvchilar))  # inglizcha alias
     app.add_handler(CallbackQueryHandler(til_callback, pattern="^til:"))
     app.add_handler(CallbackQueryHandler(tozalash_callback, pattern="^tozalash_"))
     app.add_handler(CallbackQueryHandler(yozuv_callback, pattern="^(ochirish|tuzatish)"))

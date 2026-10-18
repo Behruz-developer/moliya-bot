@@ -107,7 +107,7 @@ def _auth_401():
 
 def _til(user) -> str:
     chat_id = user["id"]
-    saqlangan = data_store._users_yukla().get(str(chat_id), {}).get("til")
+    saqlangan = data_store.user_olish(chat_id).get("til")
     if saqlangan in ("uz", "ru"):
         return saqlangan
     lang = (user.get("language_code") or "").lower()
@@ -129,9 +129,11 @@ def _yozuv_json(y: dict) -> dict:
 
 def _profil(user) -> dict:
     chat_id = user["id"]
+    ism = " ".join(x for x in (user.get("first_name", ""), user.get("last_name", "")) if x).strip()
+    # Mini App ochilganda ham user to'liq registratsiya qilinadi (bir kunda 1 marta yozadi)
+    data_store.user_faollik(chat_id, ism, user.get("username", ""), manba="miniapp")
     til = _til(user)
     yozuvlar = data_store.yozuvlar_id_bilan(chat_id)
-    ism = " ".join(x for x in (user.get("first_name", ""), user.get("last_name", "")) if x).strip()
     return {
         "ok": True,
         "lang": til,
