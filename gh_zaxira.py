@@ -22,12 +22,15 @@ _qulf = threading.Lock()
 _kesh = {"sozlangan": None}
 
 
-def _sozlanganmi() -> bool:
+def _sozlanganmi():
+    """GITHUB_TOKEN va GITHUB_REPO mavjud bo'lsa (repo, token) qaytaradi.
+    Har chaqiruvda env'ni qayta o'qiydi (env keyin ham qo'yilishi mumkin)."""
     repo = (os.getenv("GITHUB_REPO") or "").strip()
     token = (os.getenv("GITHUB_TOKEN") or "").strip()
     if repo and token:
         _kesh["sozlangan"] = (repo, token)
-    return bool(_kesh["sozlangan"])
+        return repo, token
+    return None
 
 
 def _api(url: str, method: str = "GET", body: dict = None, token: str = None):
@@ -45,8 +48,9 @@ def _api(url: str, method: str = "GET", body: dict = None, token: str = None):
 
 def faylni_zaxiralash(rel_yul: str, kontent: bytes, izoh: str):
     """Bitta faylni repoga commit qilib boradi (repo ildiziga nisbatan yo'l)."""
-    sozl = _kesh["sozlangan"]
+    sozl = _sozlanganmi()
     if not sozl:
+        logger.debug("GitHub zaxira sozlanmagan (GITHUB_TOKEN/GITHUB_REPO yo'q)")
         return False
     repo, token = sozl
     url = f"https://api.github.com/repos/{repo}/contents/{rel_yul}"
@@ -64,7 +68,16 @@ def faylni_zaxiralash(rel_yul: str, kontent: bytes, izoh: str):
         return True
     except Exception as e:
         logger.warning("GitHub zaxira ishlamadi (%s): %s", rel_yul, e)
-        return False
+        # 409 (sha o'zgargan) bo'lsa — bir marta qayta urinib ko'ramiz
+        try:
+            sha = _api(url, token=token).get("sha")
+            body = {"message": izoh, "content": base64.b64encode(kontent).decode(), "sha": sha}
+            _api(url, method="PUT", body=body, token=token)
+            logger.info("GitHub zaxira (2-urinish): %s (%d bayt)", rel_yul, len(kontent))
+            return True
+        except Exception as e2:
+            logger.warning("GitHub zaxira 2-urinish ham ishlamadi (%s): %s", rel_yul, e2)
+            return False
 
 
 def fon_zaxira(rel_yul: str, kontent: bytes, izoh: str):
