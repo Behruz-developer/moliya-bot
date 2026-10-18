@@ -39,6 +39,12 @@ load_dotenv()
 app = Flask(__name__)
 miniapp.register(app)
 
+# Eski odat uchun: /miniapp.html ham xuddi /app kabi ishlaydi
+@app.route("/miniapp.html")
+def miniapp_html_alias():
+    from flask import Response
+    return Response(miniapp._html_olish(), mimetype="text/html")
+
 DASH_PORT = int(os.getenv("DASH_PORT", 5050))
 
 # 30 sekundda avtomatik yangilanadi
@@ -197,7 +203,15 @@ def index():
 if __name__ == "__main__":
     # Eski userlar profilini fon rejimida to'ldirish (botni bloklamasin)
     threading.Thread(target=eski_profillarni_toldir, daemon=True).start()
-    print(f"📊 Admin Dashboard: http://127.0.0.1:{DASH_PORT}")
-    print(f"📱 Mini App (brauzerda):  http://127.0.0.1:{DASH_PORT}/app")
+    url = f"http://127.0.0.1:{DASH_PORT}"
+    print(f"📊 Admin Dashboard: {url}")
+    print(f"📱 Mini App (brauzerda):  {url}/app")
     print("   (faqat shu kompyuterdan ochiladi — yopish: Ctrl+C)")
+    # Brauzerni o'zi ochadi — to'g'ri manzillarda (2 sekunddan keyin)
+    try:
+        import webbrowser
+        threading.Timer(2.0, lambda: webbrowser.open(url + "/")).start()
+        threading.Timer(3.5, lambda: webbrowser.open(url + "/app")).start()
+    except Exception:
+        pass
     app.run(host="127.0.0.1", port=DASH_PORT, debug=False)
