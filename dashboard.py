@@ -63,7 +63,9 @@ _sinxron_qulf = threading.Lock()
 def gitdan_sinxronlash() -> bool:
     """GitHub'dagi eng yangi data/ fayllarini lokalga olib keladi.
     Bot serverda (Render) yangi user ro'yxatdan o'tsa va zaxiralarsa —
-    shu funksiya ularni dashboard'ga yetkazadi. Sekundiga 1 martadan ko'p emas."""
+    shu funksiya ularni dashboard'ga yetkazadi.
+    Xavfsizlik: fayl faqat remotdagi oxirgi o'zgarish sanasi lokalnikidan
+    YANGIROQ bo'lsa olinaldi — eski remot lokal yangisini buzmaydi."""
     import time
     with _sinxron_qulf:
         if time.time() - _oxirgi_sinxron[0] < 20:
@@ -85,12 +87,30 @@ def gitdan_sinxronlash() -> bool:
                 ["git", "commit", "-m", "Dashboard: lokal data zaxirasi"],
                 capture_output=True, timeout=10,
             )
-        # Remotdan faqat data/ papkasini olamiz
-        r = subprocess.run(
-            ["git", "checkout", "origin/main", "--", "data"],
-            capture_output=True, timeout=15,
+        ls = subprocess.run(
+            ["git", "ls-tree", "--name-only", "origin/main", "data/"],
+            capture_output=True, text=True, timeout=10,
         )
-        return r.returncode == 0
+        if ls.returncode != 0:
+            return False
+        olindi = False
+        for yul in ls.stdout.split():
+            r_vaqti = subprocess.run(
+                ["git", "log", "-1", "--format=%ct", "origin/main", "--", yul],
+                capture_output=True, text=True, timeout=10,
+            ).stdout.strip()
+            l_vaqti = subprocess.run(
+                ["git", "log", "-1", "--format=%ct", "HEAD", "--", yul],
+                capture_output=True, text=True, timeout=10,
+            ).stdout.strip()
+            # Lokal umuman commit qilinmagan bo'lsa (l_vaqti bo'sh) — remotni olamiz
+            if r_vaqti.isdigit() and (not l_vaqti.isdigit() or int(r_vaqti) > int(l_vaqti)):
+                if subprocess.run(
+                    ["git", "checkout", "origin/main", "--", yul],
+                    capture_output=True, timeout=10,
+                ).returncode == 0:
+                    olindi = True
+        return olindi
     except Exception:
         return False
 
