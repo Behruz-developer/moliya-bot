@@ -59,6 +59,22 @@ def _fmt(n) -> str:
 _oxirgi_sinxron = [0.0]
 _sinxron_qulf = threading.Lock()
 _sinxron_holat = {"vaqt": "—", "yangi": False}
+_zaxira_holat = {"vaqt": "—"}
+
+
+def _server_zaxira_vaqti() -> str:
+    """Server (Render) oxirgi marta data/ ga commit qilgan vaqt."""
+    try:
+        r = subprocess.run(
+            ["git", "log", "-1", "--format=%ci", "origin/main", "--", "data/"],
+            capture_output=True, text=True, timeout=10,
+        )
+        if r.returncode == 0 and r.stdout.strip():
+            sana = r.stdout.strip()[:16].replace("T", " ")
+            _zaxira_holat["vaqt"] = sana + " (UTC)"
+    except Exception:
+        pass
+    return _zaxira_holat["vaqt"]
 
 
 def gitdan_sinxronlash() -> bool:
@@ -246,7 +262,8 @@ def index():
     gitdan_sinxronlash()
     sinxron_matn = (
         f"🔄 GitHub bilan sinxron: {_sinxron_holat['vaqt']} · "
-        f"yangi ma'lumot: {'bor ✅' if _sinxron_holat['yangi'] else 'yo‘q'}"
+        f"yangi ma'lumot: {'bor ✅' if _sinxron_holat['yangi'] else 'yo‘q'} · "
+        f"🛰 Server zaxirasi: {_server_zaxira_vaqti()}"
     )
     userlar = data_store.foydalanuvchilar_royxati()
     # Eng so'nggi faol birinchi
