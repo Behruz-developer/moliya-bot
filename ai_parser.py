@@ -131,9 +131,15 @@ def _system_prompt(til: str = "uz") -> str:
 Если turi = daromad (доход), категория должна быть одной из: {daromad_list}
 Если turi = harajat (расход), категория должна быть одной из: {harajat_list}
 
+ВАЖНО — деньги, отданные ЛЮДЯМ, тоже расход:
+- «дал/дал/одолжил другу/дал Имя 500 тысяч» → turi = "harajat",
+  категория "Долг/Кредит", izoh = кому (например: "Yodgorga qarz").
+- «вернули долг / заняли у кого-то» → turi = "daromad", категория "Другой доход".
+- НЕ возвращай "noaniq" для таких сообщений — в них ЕСТЬ финансовая информация.
+
 Правильно понимай суммы: "4 миллиона", "4 млн", "4000000", "4 тысячи" (=4000)
 и т.п. переводи в правильное число. Если финансовой информации в сообщении
-вообще нет, верни turi = "noaniq".{kurs_bloki}
+вообще нет (нет ни денег, ни вопроса об отчёте), верни turi = "noaniq".{kurs_bloki}
 """
     daromad_list = ", ".join(DAROMAD_KATEGORIYALARI)
     harajat_list = ", ".join(HARAJAT_KATEGORIYALARI)
@@ -160,9 +166,16 @@ balki hisobot/statistika so'rasa (masalan: "oxirgi haftadagi xarajatlar qancha",
 Agar turi = daromad bo'lsa, kategoriya shulardan biri bo'lishi kerak: {daromad_list}
 Agar turi = harajat bo'lsa, kategoriya shulardan biri bo'lishi kerak: {harajat_list}
 
+MUHIM — odamlarga bergan pul ham xarajat:
+- "bergandim", "qarz berdim", "X ga 500 ming berdim" → turi = "harajat",
+  kategoriya "Qarz/Kredit", izoh = kimga (masalan: "Yodgorga qarz").
+- "qarzim qaytarildi", "qarz oldim" → turi = "daromad", kategoriya "Boshqa daromad".
+- Bunday xabarlarda HECH QACHON "noaniq" qaytarmang — unda moliyaviy
+  ma'lumot BOR (summa aniq eshitiladi, masalan "500 ming" = 500000).
+
 Summalarni to'g'ri tushun: "4 million", "4mln", "4000000", "4 ming" (=4000) kabi
-ifodalarni to'g'ri songa o'gir. Agar xabarda moliyaviy ma'lumot umuman
-topilmasa, "turi" ni "noaniq" qilib qaytar.{kurs_bloki}
+ifodalarni to'g'ri songa o'gir. Agar xabarda moliyaviy ma'lumot umuman bo'lmasa
+(na pul, na hisobot so'rovi), "turi" ni "noaniq" qilib qaytar.{kurs_bloki}
 """
 
 
@@ -225,4 +238,17 @@ def ovozni_tahlil_qil(fayl_yuli: str, til: str = "uz") -> dict:
         else "Bu ovozli xabarni tingla va tahlil qil."
     )
     javob_matni = _generate([sorov, audio_fayl], til=til)
+    return _natijani_tayyorla(javob_matni)
+
+
+def ovozni_tahlil_qil_bayt(data: bytes, mime: str = "audio/webm", til: str = "uz") -> dict:
+    """Xotiradagi audio baytlarni (Mini App'dan yuborilgan) tahlil qiladi."""
+    from google.genai import types
+    part = types.Part.from_bytes(data=data, mime_type=mime)
+    sorov = (
+        "Ты услышал голосовое сообщение. Расшифруй его и проанализируй."
+        if til == "ru"
+        else "Bu ovozli xabarni tingla va tahlil qil."
+    )
+    javob_matni = _generate([sorov, part], til=til)
     return _natijani_tayyorla(javob_matni)

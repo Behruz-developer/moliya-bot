@@ -252,6 +252,44 @@ def register(app):
         except (ValueError, TypeError):
             return False
 
+    @app.route("/api/voice", methods=["POST"])
+    def api_ovoz():
+        """Mini App'dan yozib olingan ovozni AI tahlil qiladi (yozuvsaqlashdan oldin).
+        Javob: turi/kategoriya/summa/izoh formani avtomatik to'ldirish uchun."""
+        user = _userdan()
+        if not user:
+            return _auth_401()
+        audio = request.get_data()
+        if not audio or len(audio) < 800:
+            return jsonify({"ok": False, "xato": "bosh"}), 400
+        if len(audio) > 10 * 1024 * 1024:  # 10 MB limit
+            return jsonify({"ok": False, "xato": "katta"}), 413
+        mime = (request.headers.get("X-Audio-Mime", "") or "").strip()
+        if not mime.startswith("audio/"):
+            mime = "audio/webm"
+        try:
+            import ai_parser
+            natija = ai_parser.ovozni_tahlil_qil_bayt(audio, mime=mime, til=_til(user))
+        except Exception:
+            logger.exception("MiniApp ovoz tahlili ishlamadi")
+            return jsonify({"ok": False, "xato": "ai"}), 502
+
+        matn = (natija.get("original_matn") or natija.get("eshitilgan_matn") or "").strip()
+        turi = (natija.get("turi") or "").strip().lower()
+        if turi not in ("daromad", "harajat") or not natija.get("summa"):
+            return jsonify({
+                "ok": False, "xato": "noaniq", "matn": matn,
+                "hisobot": turi == "hisobot",
+            })
+        return jsonify({
+            "ok": True,
+            "turi": "income" if turi == "daromad" else "expense",
+            "kategoriya": kat_kalit(natija.get("kategoriya", "")),
+            "summa": int(natija["summa"]),
+            "izoh": (natija.get("izoh") or "").strip()[:60],
+            "matn": matn,
+        })
+
     @app.route("/api/transactions", methods=["POST"])
     def api_qosh():
         user = _userdan()

@@ -222,6 +222,16 @@ body{
 .form{margin-top:8px}
 .form label{font-size:12.5px;color:var(--tx2);font-weight:600;display:block;margin:14px 0 7px}
 .form label:first-child{margin-top:4px}
+.amtmic{display:flex;gap:8px;align-items:stretch}
+.amtmic input{flex:1;min-width:0}
+.micbtn{flex:none;width:46px;border:1.5px solid #E7E7F1;background:#FAFAFE;border-radius:var(--r2);
+  cursor:pointer;font-size:19px;display:flex;align-items:center;justify-content:center;color:var(--acc)}
+.micbtn.rec{background:#FF5D5D;border-color:#FF5D5D;animation:micpulse 1.1s infinite}
+.micbtn.busy{opacity:.55;pointer-events:none}
+@keyframes micpulse{0%,100%{box-shadow:0 0 0 0 rgba(255,93,93,.55)}50%{box-shadow:0 0 0 9px rgba(255,93,93,0)}}
+.vstat{font-size:12.5px;color:var(--tx2);margin-top:7px;line-height:1.45;word-break:break-word}
+.vstat.ok{color:var(--green);font-weight:600}
+.vstat.bad{color:var(--red)}
 .form input[type=text],.form input[type=number],.form input[type=date]{width:100%;border:1.5px solid #E7E7F1;
   background:#FAFAFE;border-radius:var(--r2);padding:13px 14px;font-family:inherit;font-size:15px;color:var(--tx);outline:none}
 .form input:focus{border-color:var(--acc2)}
@@ -326,6 +336,12 @@ ru: {
   notif_title: "Нет уведомлений", notif_sub: "Здесь пока пусто — уведомления появятся здесь.",
   act_title: "Операция", act_edit: "Изменить", act_delete: "Удалить",
   add_title: "Новая операция", edit_title: "Изменить операцию",
+  v_title: "Голосовой ввод", v_start: "Нажмите и говорите",
+  v_rec: "Слушаю… нажмите, чтобы остановить",
+  v_proc: "Анализирую…",
+  v_ok: "Готово — проверьте и сохраните",
+  v_report: "это запрос отчёта — отчёты смотрите на главном экране приложения",
+  v_err: "Не получилось распознать. Скажите, например: «Потратил 50 тысяч на продукты»",
   f_type: "Тип", f_expense: "Расход", f_income: "Доход", f_amount: "Сумма",
   f_cat: "Категория", f_comment: "Комментарий", f_date: "Дата",
   f_comment_ph: "Например: Yandex Go", save: "Сохранить", cancel: "Отмена",
@@ -390,6 +406,12 @@ uz: {
   notif_title: "Bildirishnomalar yo'q", notif_sub: "Bu yerda hozircha bo'sh — bildirishnomalar shu yerda paydo bo'ladi.",
   act_title: "Operatsiya", act_edit: "Tahrirlash", act_delete: "O'chirish",
   add_title: "Yangi operatsiya", edit_title: "Operatsiyani tahrirlash",
+  v_title: "Ovozli kiritish", v_start: "Bosing va gapiring",
+  v_rec: "Tinglayapman… to'xtatish uchun bosing",
+  v_proc: "Tahlil qilinmoqda…",
+  v_ok: "Tayyor — tekshirib saqlang",
+  v_report: "bu hisobot so'rovi — hisobotlarni ilovaning bosh ekranida ko'rishingiz mumkin",
+  v_err: "Tushunib bo'lmadi. Masalan shunday ayting: «Ovqatga 50 ming sarfladim»",
   f_type: "Turi", f_expense: "Xarajat", f_income: "Daromad", f_amount: "Summa",
   f_cat: "Kategoriya", f_comment: "Izoh", f_date: "Sana",
   f_comment_ph: "Masalan: Yandex Go", save: "Saqlash", cancel: "Bekor qilish",
@@ -512,10 +534,18 @@ function periodRange(p){
 }
 function prevRange(p){ const [a] = periodRange(p); const len = Math.round((dstr(periodRange(p)[1]) - dstr(a))/86400000)+1; return [addDays(a, -len), addDays(a,-1)]; }
 
-async function api(url, method, body){
+async function api(url, method, body, extraHeaders){
   const auth = tg && tg.initData ? tg.initData : "";
   const opt = { method, headers: { "Authorization": "tma " + auth } };
-  if (body !== undefined){ opt.headers["Content-Type"] = "application/json"; opt.body = JSON.stringify(body); }
+  if (extraHeaders) Object.assign(opt.headers, extraHeaders);
+  if (body !== undefined){
+    if (body instanceof ArrayBuffer || (ArrayBuffer.isView && ArrayBuffer.isView(body))){
+      opt.body = body;  // xom baytlar (ovoz yozuvi)
+    } else {
+      opt.headers["Content-Type"] = "application/json";
+      opt.body = JSON.stringify(body);
+    }
+  }
   const r = await fetch(url, opt);
   const d = await r.json().catch(()=>({}));
   if (!r.ok) throw Object.assign(new Error(d.xato||"err"), {status:r.status, sabab:d.sabab||"", diag:d.diag||null});
@@ -1065,7 +1095,11 @@ function openForm(id){
         <button id="ftInc" class="${S.formType==="income"?"on inc":""}">${esc(t("f_income"))}</button>
       </div>
       <label>${esc(t("f_amount"))}</label>
-      <input id="fAmt" type="text" inputmode="numeric" autocomplete="off" placeholder="0" value="${y?fmt(y.summa):""}">
+      <div class="amtmic">
+        <input id="fAmt" type="text" inputmode="numeric" autocomplete="off" placeholder="0" value="${y?fmt(y.summa):""}">
+        <button type="button" class="micbtn" id="micBtn" onclick="voiceInput()">🎙</button>
+      </div>
+      <div class="vstat" id="fVstat" style="display:none"></div>
       <div class="qs" id="fQuick"></div>
       <label>${esc(t("f_cat"))}</label>
       <div class="kgrid" id="fCats"></div>
@@ -1122,6 +1156,81 @@ function openForm(id){
   }
   S._drawQuick = drawQuick;
   S._selKat = () => selKat;
+  S._setKat = k => { selKat = k; drawCats(); };
+}
+/* --- Ovozli kiritish: yozib olish -> /api/voice AI -> forma to'ldiriladi --- */
+function vStat(msg, cls){
+  const el = $("fVstat");
+  if(!el) return;
+  el.style.display = msg ? "block" : "none";
+  el.className = "vstat" + (cls ? " "+cls : "");
+  el.textContent = msg || "";
+}
+function mimeFor(mr){
+  if (mr && mr.mimeType) return mr.mimeType;
+  return (window.MediaRecorder && MediaRecorder.isTypeSupported("audio/webm;codecs=opus"))
+    ? "audio/webm;codecs=opus"
+    : (window.MediaRecorder && MediaRecorder.isTypeSupported("audio/mp4") ? "audio/mp4" : "audio/webm");
+}
+async function voiceInput(){
+  const btn = $("micBtn");
+  if(!btn) return;
+  if (S._mic && S._mic.rec && S._mic.rec.state === "recording"){ stopMic(); return; }
+  if (S._mic && S._mic.busy) return;
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+    vStat(t("v_err"), "bad"); return;
+  }
+  try{
+    const stream = await navigator.mediaDevices.getUserMedia({audio:true});
+    const mr = new MediaRecorder(stream, {mimeType: mimeFor()});
+    const parts = [];
+    mr.ondataavailable = e => { if (e.data && e.data.size) parts.push(e.data); };
+    mr.onstop = async () => {
+      stream.getTracks().forEach(x=>x.stop());
+      btn.classList.remove("rec");
+      const blob = new Blob(parts, {type: S._mic.mime});
+      if (blob.size < 1200){ S._mic = null; vStat(t("v_err"), "bad"); return; }
+      btn.classList.add("busy");
+      vStat(t("v_proc"));
+      S._mic.busy = true;
+      try{
+        const buf = await blob.arrayBuffer();
+        const res = await api("/api/voice", "POST", buf, {"X-Audio-Mime": S._mic.mime});
+        S._mic = null;
+        btn.classList.remove("busy");
+        if (res.ok){
+          $("fAmt").value = fmt(res.summa);
+          $("fAmt").dispatchEvent(new Event("input"));
+          if (res.izoh && !$("fIzoh").value) $("fIzoh").value = res.izoh;
+          const aiInc = res.turi === "income";
+          if (aiInc !== (S.formType === "income")){
+            S.formType = res.turi;
+            const exp=$("ftExp"), inc=$("ftInc");
+            if (exp) exp.className = S.formType==="expense" ? "on exp" : "";
+            if (inc) inc.className = S.formType==="income" ? "on inc" : "";
+          }
+          if (S._setKat && res.kategoriya && S.cats[res.kategoriya]
+              && (S.cats[res.kategoriya].tur==="daromad") === aiInc){
+            S._setKat(res.kategoriya);
+          }
+          vStat(res.matn ? "✅ «"+res.matn+"»" : t("v_ok"), "ok");
+          haptic("ok");
+        } else {
+          vStat(res.xato==="hisobot"
+            ? (res.matn ? "📊 «"+res.matn+"» — " : "") + t("v_report")
+            : t("v_err"), "bad");
+          haptic("heavy");
+        }
+      }catch(e){ S._mic=null; btn.classList.remove("busy","rec"); vStat(t("v_err"), "bad"); }
+    };
+    S._mic = {rec: mr, mime: mr.mimeType || "audio/webm", busy:false};
+    mr.start();
+    btn.classList.add("rec");
+    vStat(t("v_rec"));
+  }catch(e){ vStat(t("v_err"), "bad"); }
+}
+function stopMic(){
+  try{ if (S._mic && S._mic.rec && S._mic.rec.state !== "inactive") S._mic.rec.stop(); }catch(e){}
 }
 async function saveForm(){
   if (S._saving) return;  // ikki marta bosishdan himoya (takroriy yozuv chiqmasin)
