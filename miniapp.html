@@ -76,12 +76,12 @@ body{
 
 /* --- Ro'yxat elementlari --- */
 .tlist{margin-top:6px}
-.titem{display:flex;align-items:center;gap:12px;padding:13px 0;position:relative;border-bottom:1px solid var(--line)}
+.titem{display:flex;align-items:center;gap:12px;padding:13px 0;position:relative;border-bottom:1px solid var(--line);cursor:pointer}
 .titem:last-child{border-bottom:none}
 .titem .ic{width:46px;height:46px;border-radius:16px;display:flex;align-items:center;justify-content:center;flex:none}
 .titem .ic svg{width:21px;height:21px}
 .titem .mid{flex:1;min-width:0}
-.titem .nm{font-size:14.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.titem .nm{font-size:14.5px;font-weight:600;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:break-word}
 .titem .sb{font-size:12px;color:var(--tx2);margin-top:2px}
 .titem .end{text-align:right}
 .titem .sm{font-size:13.5px;font-weight:700;white-space:nowrap}
@@ -89,6 +89,19 @@ body{
 .titem .st.inc{color:var(--green)}
 .titem.swiped{background:#FBFAFF}
 .titem .amt-plus{color:var(--green)}
+
+/* --- Tranzaksiya batafsil kartochkasi --- */
+.dcard .dhead{display:flex;align-items:center;gap:14px;margin:4px 0 10px}
+.dcard .dic{width:52px;height:52px;border-radius:18px;display:flex;align-items:center;justify-content:center;flex:none}
+.dcard .dic svg{width:24px;height:24px}
+.dcard .damt{font-size:21px;font-weight:800;letter-spacing:-.3px}
+.dcard .damt.plus{color:var(--green)}
+.dcard .damt.minus{color:var(--red)}
+.dcard .dttl{font-size:13.5px;color:var(--tx2);margin-top:2px;word-break:break-word}
+.drow{display:flex;align-items:baseline;justify-content:space-between;gap:14px;padding:11px 0;border-bottom:1px solid var(--line);font-size:13.5px}
+.drow:last-of-type{border-bottom:none}
+.drow span{color:var(--tx2);flex:none}
+.drow b{font-weight:600;text-align:right;word-break:break-word}
 
 /* --- Chip-lar --- */
 .chips{display:flex;gap:8px;align-items:center;overflow-x:auto;scrollbar-width:none;margin:14px 0 4px}
@@ -623,7 +636,7 @@ function statusOf(y){ return y.turi === "income" ? [t("st_credit"), "inc"] : [t(
 function tItem(y){
   const [st, cls] = statusOf(y);
   const plus = y.turi === "income";
-  return `<div class="titem" data-id="${y.id}">
+  return `<div class="titem" data-id="${y.id}" onclick="openDetail('${y.id}')">
     <div class="ic" style="background:${catColor(y.kategoriya)}22;color:${catColor(y.kategoriya)}">${catIcon(y.kategoriya)}</div>
     <div class="mid"><div class="nm">${esc(catNameTitle(y))}</div><div class="sb">${esc(catSub(y))}</div></div>
     <div class="end"><div class="sm ${plus?"amt-plus":""}">${plus?"+":"−"}${fmt(y.summa)} ${t("som")}</div><div class="st ${cls}">${st}</div></div>
@@ -1048,7 +1061,7 @@ function bindLongPress(box){
   box.addEventListener("touchstart", e => {
     const it = e.target.closest(".titem"); if (!it) return;
     target = it; sx = e.touches[0].clientX;
-    tmr = setTimeout(() => { tmr = null; haptic("medium"); openAction(target.dataset.id); }, 450);
+    tmr = setTimeout(() => { tmr = null; haptic("medium"); S._lp = Date.now(); openAction(target.dataset.id); }, 450);
   }, {passive:true});
   box.addEventListener("touchmove", e => {
     if (tmr && Math.abs(e.touches[0].clientX - sx) > 40){ clearTimeout(tmr); tmr = null; }
@@ -1056,8 +1069,34 @@ function bindLongPress(box){
   box.addEventListener("touchend", () => { if (tmr){ clearTimeout(tmr); tmr = null; } });
   box.addEventListener("contextmenu", e => {
     const it = e.target.closest(".titem");
-    if (it){ e.preventDefault(); openAction(it.dataset.id); }
+    if (it){ e.preventDefault(); S._lp = Date.now(); openAction(it.dataset.id); }
   });
+}
+function openEdit(id){ openForm(id); }  /* action/detaillardagi «Tahrirlash» uchun */
+function openDetail(id){
+  // Uzoq bosish (swipe/action) paytida click ham keladi — uni o'tkazib yuboramiz
+  if (Date.now() - (S._lp||0) < 600) return;
+  const y = S.tx.find(x=>x.id===id); if (!y) return;
+  const plus = y.turi === "income";
+  const cc = catColor(y.kategoriya);
+  haptic("light");
+  showSheet(`<div class="dcard">
+    <div class="dhead">
+      <div class="dic" style="background:${cc}22;color:${cc}">${catIcon(y.kategoriya)}</div>
+      <div>
+        <div class="damt ${plus?"plus":"minus"}">${plus?"+":"−"}${fmt(y.summa)} ${esc(t("som"))}</div>
+        <div class="dttl">${esc(t(plus?"f_income":"f_expense"))} • ${esc(t(plus?"st_credit":"st_done"))}</div>
+      </div>
+    </div>
+    <div class="nm" style="font-size:15.5px;margin-bottom:6px">${esc(catNameTitle(y))}</div>
+    <div class="drow"><span>${esc(t("f_cat"))}</span><b>${esc(catName(y.kategoriya))}</b></div>
+    <div class="drow"><span>${esc(t("f_date"))}</span><b>${esc(dayLabel(y.sana))}${y.vaqt?", "+esc(y.vaqt):""}</b></div>
+    <div class="drow"><span>${esc(t("f_comment"))}</span><b>${esc(y.izoh||"—")}</b></div>
+  </div>
+  <div class="formbtns">
+    <button class="del" onclick="askDelete('${id}')">${esc(t("act_delete"))}</button>
+    <button class="save" onclick="openEdit('${id}')">${esc(t("act_edit"))}</button>
+  </div>`);
 }
 function openAction(id){
   const y = S.tx.find(x=>x.id===id); if (!y) return;
