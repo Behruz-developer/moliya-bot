@@ -74,7 +74,7 @@ T = {
         "til_saqlandi": "✅ Til saqlandi: o'zbekcha",
         "menyu_tanlangan": (
             "🎉 Ajoyib! Bot ishga tayyor.\n\n"
-            "📝 SHUNDAKI ISHLAYDI — sozlashga ehtiyoj yo'q:\n"
+            "📝 OSON ISHLAYDI — hech qanday sozlash kerak emas:\n"
             "Shunchaki yozing yoki 🎤 ovozli xabar yuboring:\n"
             "• \"Bugun 4 million oylik oldim\"\n"
             "• \"Bozorga 150 ming sarfladim\"\n"
@@ -82,11 +82,11 @@ T = {
             "📋 Buyruqlar:\n"
             "📊 /balans — hisobot\n"
             "🕓 /oxirgi — oxirgi 5 yozuv (o'chirish/tuzatish)\n"
-            "📥 /eksport — CSV fayl\n"
+            "📥 /eksport — Excel fayl (xlsx)\n"
             "🧹 /tozalash — barcha yozuvlarni o'chirish\n"
             "🔗 /sahifa — moliya ilovasini ochish\n"
             "🌐 /til — tilni o'zgartirish\n\n"
-            "💡 Pastdagi menyudan ham xuddi shu amallarni bajarish mumkin. Yaxshi kuzatishlar! 💰"
+            "💡 Pastdagi menyudan ham xuddi shu amallarni bajarish mumkin. Omadingiz tilaymiz! 💰"
         ),
         "balans_sarlavha": "📊 Hisobotingiz:",
         "balans_xato": "❌ Hisobotni olishda xatolik yuz berdi. Birozdan so'ng qaytadan urinib ko'ring.",
@@ -184,7 +184,7 @@ T = {
         "til_saqlandi": "✅ Язык сохранён: русский",
         "menyu_tanlangan": (
             "🎉 Отлично! Бот готов к работе.\n\n"
-            "📝 РАБОТАЕТ ПРОСТО — никакой настройки не нужно:\n"
+            "📝 ВСЁ ПРОСТО — настраивать ничего не нужно:\n"
             "Просто напишите или отправьте 🎤 голосовое сообщение:\n"
             "• \"Сегодня получил 4 миллиона зарплаты\"\n"
             "• \"Потратил 150 тысяч на рынок\"\n"
@@ -192,7 +192,7 @@ T = {
             "📋 Команды:\n"
             "📊 /balans — отчёт\n"
             "🕓 /oxirgi — последние 5 записей (удалить/исправить)\n"
-            "📥 /eksport — CSV файл\n"
+            "📥 /eksport — Excel-файл (xlsx)\n"
             "🧹 /tozalash — удалить все записи\n"
             "🔗 /sahifa — открыть приложение\n"
             "🌐 /til — сменить язык\n\n"
