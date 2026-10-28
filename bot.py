@@ -72,20 +72,20 @@ T = {
         "til_uz_tugma": "🇺🇿 O'zbekcha",
         "til_ru_tugma": "🇷🇺 Русский",
         "til_saqlandi": "✅ Til saqlandi: o'zbekcha",
-"menu_tanlangan": (
-    "🎉 Bot ishga tayyor!\n\n"
-    "📝 Shunchaki yozing yoki 🎤 ovozli xabar yuboring:\n"
-    "• “Bugun 4 million oylik oldim”\n"
-    "• “Bozorga 150 ming sarfladim”\n\n"
-    "Bot summa, kategoriya va turini o‘zi aniqlaydi.\n\n"
-    "📊 /balans — hisobot\n"
-    "🕓 /oxirgi — oxirgi yozuvlar\n"
-    "📥 /eksport — Excel fayl\n"
-    "🧹 /tozalash — barcha yozuvlarni o‘chirish\n"
-    "🔗 /sahifa — moliya ilovasi\n"
-    "🌐 /til — tilni o‘zgartirish\n\n"
-    "💡 Barcha funksiyalar pastdagi menyuda ham mavjud."
-),
+        "menyu_tanlangan": (
+            "🎉 Bot ishga tayyor!\n\n"
+            "📝 Shunchaki yozing yoki 🎤 ovozli xabar yuboring:\n"
+            "• “Bugun 4 million oylik oldim”\n"
+            "• “Bozorga 150 ming sarfladim”\n\n"
+            "Bot summa, kategoriya va turini o‘zi aniqlaydi.\n\n"
+            "📊 /balans — hisobot\n"
+            "🕓 /oxirgi — oxirgi yozuvlar\n"
+            "📥 /eksport — Excel fayl\n"
+            "🧹 /tozalash — barcha yozuvlarni o‘chirish\n"
+            "🔗 /sahifa — moliya ilovasi\n"
+            "🌐 /til — tilni o‘zgartirish\n\n"
+            "💡 Barcha funksiyalar pastdagi menyuda ham mavjud."
+        ),
         "balans_sarlavha": "📊 Hisobotingiz:",
         "balans_xato": "❌ Hisobotni olishda xatolik yuz berdi. Birozdan so'ng qaytadan urinib ko'ring.",
         "umumiy_daromad": "🟢 Umumiy daromad",
@@ -180,20 +180,20 @@ T = {
         "til_uz_tugma": "🇺🇿 O'zbekcha",
         "til_ru_tugma": "🇷🇺 Русский",
         "til_saqlandi": "✅ Язык сохранён: русский",
-        "menu_tanlangan": (
-    "🎉 Бот готов к работе!\n\n"
-    "📝 Просто напишите или отправьте 🎤 голосовое сообщение:\n"
-    "• “Сегодня получил зарплату 4 миллиона”\n"
-    "• “Потратил 150 тысяч на базаре”\n\n"
-    "Бот сам определит сумму, категорию и тип операции.\n\n"
-    "📊 /balans — отчёт\n"
-    "🕓 /oxirgi — последние записи\n"
-    "📥 /eksport — Excel-файл\n"
-    "🧹 /tozalash — удалить все записи\n"
-    "🔗 /sahifa — финансовое приложение\n"
-    "🌐 /til — изменить язык\n\n"
-    "💡 Все функции также доступны в меню ниже."
-),
+        "menyu_tanlangan": (
+            "🎉 Бот готов к работе!\n\n"
+            "📝 Просто напишите или отправьте 🎤 голосовое сообщение:\n"
+            "• “Сегодня получил зарплату 4 миллиона”\n"
+            "• “Потратил 150 тысяч на базаре”\n\n"
+            "Бот сам определит сумму, категорию и тип операции.\n\n"
+            "📊 /balans — отчёт\n"
+            "🕓 /oxirgi — последние записи\n"
+            "📥 /eksport — Excel-файл\n"
+            "🧹 /tozalash — удалить все записи\n"
+            "🔗 /sahifa — финансовое приложение\n"
+            "🌐 /til — изменить язык\n\n"
+            "💡 Все функции также доступны в меню ниже."
+        ),
         "balans_sarlavha": "📊 Ваш отчёт:",
         "balans_xato": "❌ Ошибка при получении отчёта. Попробуйте позже.",
         "umumiy_daromad": "🟢 Общий доход",
