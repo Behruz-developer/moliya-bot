@@ -14,6 +14,7 @@ import os
 import io
 import re
 import time
+import asyncio
 import datetime
 import tempfile
 import logging
@@ -173,6 +174,12 @@ T = {
         "fo_faqt": "⛔ Bu buyruq faqat bot egasi uchun.",
         "fo_yozuvlar": "🧾",
         "fo_birinchi": "📅",
+        "xabar_bosh": "✍️ Matn yozing: /xabar <xabar matni>",
+        "xabar_preview": "📣 Bu xabar BARCHA foydalanuvchilarga ({n} ta) yuboriladi. Davom etasizmi?",
+        "xabar_ha": "✅ Ha, yubor",
+        "xabar_bekor": "❌ Bekor qilindi — xabar yuborilmadi.",
+        "xabar_yuborilmoqda": "⏳ Xabar yuborilmoqda...",
+        "xabar_tayyor": "✅ Yuborildi: {ok} ta\n❌ Xatolik: {xato} ta",
     },
     "ru": {
         "salom_tanlash": "Ассалому алайкум! 👋\nПожалуйста, выберите язык 👇",
@@ -281,6 +288,12 @@ T = {
         "fo_faqt": "⛔ Эта команда доступна только владельцу бота.",
         "fo_yozuvlar": "🧾",
         "fo_birinchi": "📅",
+        "xabar_bosh": "✍️ Напишите текст: /xabar <текст сообщения>",
+        "xabar_preview": "📣 Это сообщение будет отправлено ВСЕМ пользователям ({n}). Продолжить?",
+        "xabar_ha": "✅ Да, отправить",
+        "xabar_bekor": "❌ Отменено — сообщение не отправлено.",
+        "xabar_yuborilmoqda": "⏳ Отправка сообщения...",
+        "xabar_tayyor": "✅ Отправлено: {ok}\n❌ Ошибок: {xato}",
     },
 }
 
@@ -372,28 +385,40 @@ def _balans_matni(chat_id, til: str) -> str:
     return "\n".join(qatorlar)
 
 
-def _davr_oraligi(davr: str) -> str:
-    """Davr boshlanish sanasi ('hammasi' uchun bo'sh satr)."""
+def _davr_oraligi(davr: str, dan: str = "", gacha: str = "") -> tuple:
+    """(boshlanish, tugash) sanalari ISO formatda ('hammasi' uchun ikkalasi bo'sh)."""
     bugun = datetime.date.today()
+    if davr == "maxsus" and dan:
+        return dan[:10], (gacha[:10] if gacha else bugun.isoformat())
     if davr == "bugun":
-        return bugun.isoformat()
+        return bugun.isoformat(), bugun.isoformat()
     if davr == "hafta":
-        return (bugun - datetime.timedelta(days=6)).isoformat()
+        return (bugun - datetime.timedelta(days=6)).isoformat(), bugun.isoformat()
     if davr == "oy":
-        return bugun.replace(day=1).isoformat()
+        return bugun.replace(day=1).isoformat(), bugun.isoformat()
     if davr == "yil":
-        return bugun.replace(month=1, day=1).isoformat()
-    return ""
+        return bugun.replace(month=1, day=1).isoformat(), bugun.isoformat()
+    return "", ""
 
 
-def _hisobot_matni(chat_id, til: str, davr: str, nima: str) -> str:
+def _davr_matni_qisqa(til: str, davr: str, dan: str = "", gacha: str = "") -> str:
+    """Hisobot sarlavhasi/fayl nomi uchun davr matni."""
+    t = T[til]
+    if davr == "maxsus" and dan:
+        bosh, oxir = _davr_oraligi(davr, dan, gacha)
+        return f"{bosh} — {oxir}"
+    davr_kalit = davr if davr in ("bugun", "hafta", "oy", "yil", "hammasi") else "hammasi"
+    return t["davr_" + davr_kalit]
+
+
+def _hisobot_matni(chat_id, til: str, davr: str, nima: str, dan: str = "", gacha: str = "") -> str:
     """AI 'hisobot' deganda — davr va tur bo'yicha hisobot matni."""
     t = T[til]
     som = t["som"]
     yozuvlar = data_store.barchasi(chat_id)
-    bosh = _davr_oraligi(davr)
+    bosh, oxir = _davr_oraligi(davr, dan, gacha)
     if bosh:
-        yozuvlar = [y for y in yozuvlar if str(y.get("sana", ""))[:10] >= bosh]
+        yozuvlar = [y for y in yozuvlar if bosh <= str(y.get("sana", ""))[:10] <= oxir]
     filtr = {"daromad": ("Daromad",), "harajat": ("Harajat",)}.get(nima, ("Daromad", "Harajat"))
     tanlangan = [y for y in yozuvlar if y.get("turi") in filtr]
     if not tanlangan:
@@ -406,8 +431,7 @@ def _hisobot_matni(chat_id, til: str, davr: str, nima: str) -> str:
         nom = y.get("kategoriya", "-")
         kat[nom] = kat.get(nom, 0) + data_store._son_qil(y.get("summa", 0))
 
-    davr_kalit = davr if davr in ("bugun", "hafta", "oy", "yil", "hammasi") else "hammasi"
-    q = [t["hisobot_sarlavha"].format(davr=t["davr_" + davr_kalit]), ""]
+    q = [t["hisobot_sarlavha"].format(davr=_davr_matni_qisqa(til, davr, dan, gacha)), ""]
     if nima in ("daromad", "hammasi"):
         q.append(f"{t['his_daromad']}: {_summa_fmt(dar)} {som}")
     if nima in ("harajat", "hammasi"):
@@ -433,17 +457,57 @@ _oxirgi_qoshilgan = {}  # chat_id -> (kalit, vaqt)
 _DUPL_VAQT = 300  # soniya
 
 
+async def _hisobot_fayl_yubor(update, context, til: str, davr: str, nima: str,
+                               dan: str = "", gacha: str = ""):
+    """AI 'fayl_kerak' deganda — tanlangan davr uchun chiroyli .xlsx yuboradi."""
+    t = T[til]
+    chat_id = update.effective_chat.id
+    xabar = await update.message.reply_text(t["eksport_tayyorlanmoqda"])
+    try:
+        yozuvlar = data_store.barchasi(chat_id)
+        bosh, oxir = _davr_oraligi(davr, dan, gacha)
+        if bosh:
+            yozuvlar = [y for y in yozuvlar if bosh <= str(y.get("sana", ""))[:10] <= oxir]
+        filtr = {"daromad": ("Daromad",), "harajat": ("Harajat",)}.get(nima, ("Daromad", "Harajat"))
+        yozuvlar = [y for y in yozuvlar if y.get("turi") in filtr]
+        if not yozuvlar:
+            await xabar.edit_text(t["eksport_bosh"])
+            return
+
+        u = update.effective_user
+        egasi = " ".join(x for x in (u.first_name, u.last_name) if x).strip() or (u.username or "")
+        davr_matni = _davr_matni_qisqa(til, davr, dan, gacha)
+        fayl_bytes = xlsx_yoz.hisobot_yarat(yozuvlar, davr_matni, egasi=egasi, til=til)
+
+        await xabar.edit_text(t["eksport_topildi"].format(n=len(yozuvlar)))
+        bugun = datetime.date.today().isoformat()
+        await update.message.reply_document(
+            document=io.BytesIO(fayl_bytes),
+            filename=f"moliya_{bugun}.xlsx",
+            caption=t["eksport_caption"].format(n=len(yozuvlar)),
+        )
+        await xabar.delete()
+    except Exception:
+        logger.exception("Hisobot fayl yuborishda xatolik")
+        await xabar.edit_text(t["eksport_xato"])
+
+
 async def _natijani_saqla_va_javob_ber(update, context, natija: dict, til: str):
     t = T[til]
 
-    # Hisobot so'rovi — yozuv EMAS, hisobot matnini qaytaramiz
+    # Hisobot so'rovi — yozuv EMAS, hisobot matni yoki (so'ralsa) .xlsx fayl
     if natija.get("turi") == "hisobot":
+        davr = natija.get("davr", "hammasi")
+        nima = natija.get("nima", "hammasi")
+        dan = natija.get("dan", "") or ""
+        gacha = natija.get("gacha", "") or ""
+        # Aniq sana oralig'i ("10-oktabrdan 15-oktabrgacha") yoki aniq fayl so'ralsa —
+        # chiroyli .xlsx hisobot yuboriladi; aks holda qisqa matnli hisobot yetarli.
+        if natija.get("fayl_kerak") or davr == "maxsus":
+            await _hisobot_fayl_yubor(update, context, til, davr, nima, dan, gacha)
+            return
         await update.message.reply_text(
-            _hisobot_matni(
-                update.effective_chat.id, til,
-                natija.get("davr", "hammasi"),
-                natija.get("nima", "hammasi"),
-            )
+            _hisobot_matni(update.effective_chat.id, til, davr, nima, dan, gacha)
         )
         return
 
@@ -513,6 +577,67 @@ async def foydalanuvchilar(update: Update, context: ContextTypes.DEFAULT_TYPE):
             f"   {t['fo_birinchi']} {x['birinchi'][:10] or '—'} → {x['oxirgi'][:10] or '—'}"
         )
     await update.message.reply_text("\n".join(q))
+
+
+# ============================ XABAR (BROADCAST) — faqat bot egasi ============================
+# /xabar <matn> — avval EGAGA preview + tasdiq tugmasi ko'rsatiladi, "Ha" bosilsagina
+# ro'yxatdagi BARCHA foydalanuvchilarga yuboriladi.
+_pending_xabar = {}  # owner_chat_id -> matn
+
+
+async def xabar_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """/xabar <matn> — faqat bot egasi uchun: avval preview, tasdiqlansa — hammaga yuboriladi."""
+    til = _til(update)
+    t = T[til]
+    chat_id = update.effective_chat.id
+    if str(chat_id) != OWNER_ID:
+        await update.message.reply_text(t["fo_faqt"])
+        return
+    # context.args bo'shliqqa bo'lib beradi (ko'p qatorli matn buzilmasin deb,
+    # asl xabardan /xabar buyrug'idan keyingi qismni ajratib olamiz)
+    xom = update.message.text or ""
+    matn = xom.split(None, 1)[1].strip() if len(xom.split(None, 1)) > 1 else ""
+    if not matn:
+        await update.message.reply_text(t["xabar_bosh"])
+        return
+    royxat = data_store.foydalanuvchilar_royxati()
+    _pending_xabar[chat_id] = matn
+    kb = InlineKeyboardMarkup(
+        [[
+            InlineKeyboardButton(t["xabar_ha"], callback_data="xabar_ha"),
+            InlineKeyboardButton(t["bekor_tugma"], callback_data="xabar_yoq"),
+        ]]
+    )
+    await update.message.reply_text(
+        t["xabar_preview"].format(n=len(royxat)) + "\n\n" + matn,
+        reply_markup=kb,
+    )
+
+
+async def xabar_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Broadcast tasdiq/bekor tugmalari."""
+    query = update.callback_query
+    await query.answer()
+    til = _til(update)
+    t = T[til]
+    chat_id = update.effective_chat.id
+    if str(chat_id) != OWNER_ID:
+        return
+    matn = _pending_xabar.pop(chat_id, None)
+    if query.data == "xabar_yoq" or not matn:
+        await query.edit_message_text(t["xabar_bekor"])
+        return
+    await query.edit_message_text(t["xabar_yuborilmoqda"])
+    royxat = data_store.foydalanuvchilar_royxati()
+    yubor_soni, xato_soni = 0, 0
+    for x in royxat:
+        try:
+            await context.bot.send_message(int(x["chat_id"]), matn)
+            yubor_soni += 1
+        except Exception:
+            xato_soni += 1
+        await asyncio.sleep(0.05)  # Telegram rate-limit'ga qarshi kichik pauza
+    await query.edit_message_text(t["xabar_tayyor"].format(ok=yubor_soni, xato=xato_soni))
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -859,8 +984,10 @@ def asosiy():
     app.add_handler(CommandHandler("id", mening_id))
     app.add_handler(CommandHandler("foydalanuvchilar", foydalanuvchilar))
     app.add_handler(CommandHandler("users", foydalanuvchilar))  # inglizcha alias
+    app.add_handler(CommandHandler("xabar", xabar_cmd))  # faqat bot egasi: hammaga xabar
     app.add_handler(CallbackQueryHandler(til_callback, pattern="^til:"))
     app.add_handler(CallbackQueryHandler(tozalash_callback, pattern="^tozalash_"))
+    app.add_handler(CallbackQueryHandler(xabar_callback, pattern="^xabar_"))
     app.add_handler(CallbackQueryHandler(yozuv_callback, pattern="^(ochirish|tuzatish)"))
 
     menyu_regex = "|".join(re.escape(x) for x in sorted(MENYU_TUGMALARI))

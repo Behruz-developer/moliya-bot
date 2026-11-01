@@ -106,6 +106,10 @@ def _kurs_matni(til: str) -> str:
 def _system_prompt(til: str = "uz") -> str:
     """Tilga mos system prompt qaytaradi (til='uz' yoki 'ru'). Joriy kurs ham kiradi."""
     kurs_bloki = _kurs_matni(til)
+    from zoneinfo import ZoneInfo
+    bugun = datetime.datetime.now(ZoneInfo("Asia/Tashkent")).date().isoformat()
+    sana_bloki_ru = f"\n\nСегодняшняя дата: {bugun} (используй её, чтобы вычислить точные даты из относительных фраз)."
+    sana_bloki_uz = f"\n\nBugungi sana: {bugun} (nisbiy iboralardan aniq sanalarni shu asosda hisobla)."
     if til == "ru":
         daromad_list = ", ".join(DAROMAD_KATEGORIYALARI_RU)
         harajat_list = ", ".join(HARAJAT_KATEGORIYALARI_RU)
@@ -118,15 +122,23 @@ def _system_prompt(til: str = "uz") -> str:
   "summa": <число в сумах, например 4000000 — для hisobot укажи 0>,
   "kategoriya": "<одно из списка ниже> — для hisobot оставь пустым",
   "izoh": "<короткий комментарий, не длиннее 5-6 слов>",
-  "davr": "<только для hisobot: bugun | hafta | oy | yil | hammasi>",
+  "davr": "<только для hisobot: bugun | hafta | oy | yil | hammasi | maxsus>",
   "nima": "<только для hisobot: daromad | harajat | hammasi>",
+  "dan": "<только если davr=maxsus: дата начала периода в формате YYYY-MM-DD>",
+  "gacha": "<только если davr=maxsus: дата конца периода в формате YYYY-MM-DD>",
+  "fayl_kerak": "<true, если пользователь явно просит файл/экспорт/выгрузку (например 'пришли файлом', 'экспортируй', 'xlsx'); иначе false>",
   "eshitilgan_matn": "<если ввод голосовой — запиши здесь расшифровку; если текстовый — оставь пустым>"
 }}
 
 ВАЖНО — запросы отчётов: если пользователь просит НЕ добавить запись,
-а узнать статистику (например: "сколько расходов за последнюю неделю",
-"какой мой доход за этот месяц", "дай отчёт по расходам за год"),
+а узнать статистику или получить отчёт за период (например: "сколько расходов
+за последнюю неделю", "какой мой доход за этот месяц", "дай отчёт по расходам
+за год", "пришли отчёт с 10 по 15 октября", "выгрузи транзакции за октябрь файлом"),
 верни turi = "hisobot" и заполни "davr" и "nima". В этом случае summa = 0.
+Если пользователь называет КОНКРЕТНЫЙ диапазон дат (например "с 10 по 15 октября",
+"с 1 по 30 сентября"), верни davr = "maxsus" и заполни "dan" и "gacha" точными
+датами (YYYY-MM-DD), опираясь на сегодняшнюю дату ниже. Если пользователь просит
+именно файл/отправить документом — fayl_kerak = true, иначе false.
 
 Если turi = daromad (доход), категория должна быть одной из: {daromad_list}
 Если turi = harajat (расход), категория должна быть одной из: {harajat_list}
@@ -139,7 +151,7 @@ def _system_prompt(til: str = "uz") -> str:
 
 Правильно понимай суммы: "4 миллиона", "4 млн", "4000000", "4 тысячи" (=4000)
 и т.п. переводи в правильное число. Если финансовой информации в сообщении
-вообще нет (нет ни денег, ни вопроса об отчёте), верни turi = "noaniq".{kurs_bloki}
+вообще нет (нет ни денег, ни вопроса об отчёте), верни turi = "noaniq".{kurs_bloki}{sana_bloki_ru}
 """
     daromad_list = ", ".join(DAROMAD_KATEGORIYALARI)
     harajat_list = ", ".join(HARAJAT_KATEGORIYALARI)
@@ -152,16 +164,25 @@ FAQAT quyidagi JSON formatda javob ber, hech qanday qo'shimcha matn yozma:
   "summa": <son, so'm hisobida, masalan 4000000 — hisobot bo'lsa 0>,
   "kategoriya": "<quyidagi ro'yxatdan biri> — hisobot bo'lsa bo'sh qoldir",
   "izoh": "<qisqa, 5-6 so'zdan oshmagan izoh>",
-  "davr": "<faqat hisobot uchun: bugun | hafta | oy | yil | hammasi>",
+  "davr": "<faqat hisobot uchun: bugun | hafta | oy | yil | hammasi | maxsus>",
   "nima": "<faqat hisobot uchun: daromad | harajat | hammasi>",
+  "dan": "<faqat davr=maxsus bo'lsa: davr boshlanish sanasi YYYY-MM-DD formatida>",
+  "gacha": "<faqat davr=maxsus bo'lsa: davr tugash sanasi YYYY-MM-DD formatida>",
+  "fayl_kerak": "<foydalanuvchi aniq fayl/excel/xlsx/eksport so'rasa true, aks holda false>",
   "eshitilgan_matn": "<agar kirish ovozli xabar bo'lsa, eshitgan gapingizni shu yerga yoz; matnli xabar bo'lsa bo'sh qoldir>"
 }}
 
 MUHIM — hisobot so'rovlari: agar foydalanuvchi YANGI yozuv qo'shishni emas,
-balki hisobot/statistika so'rasa (masalan: "oxirgi haftadagi xarajatlar qancha",
-"bu oy daromadim qancha bo'ldi", "yillik rasxodlar to'g'risida malumot ber",
-"shu hafta qancha sarfladim"), "turi" ni "hisobot" qilib qaytar va
-"davr" hamda "nima" maydonlarini to'ldir. Bu holda "summa" = 0 bo'lsin.
+balki hisobot/statistika yoki muayyan davr uchun hisobot so'rasa (masalan:
+"oxirgi haftadagi xarajatlar qancha", "bu oy daromadim qancha bo'ldi",
+"10-oktabrdan 15-oktabrgacha bo'lgan hisobotni yubor", "shu oydagi xarajatlarni
+fayl qilib ber"), "turi" ni "hisobot" qilib qaytar va "davr" hamda "nima"
+maydonlarini to'ldir. Bu holda "summa" = 0 bo'lsin.
+Agar foydalanuvchi ANIQ sana oralig'ini aytsa (masalan "10-oktabrdan
+15-oktabrgacha", "1-sentabrdan 30-sentabrgacha"), "davr" = "maxsus" qaytar va
+"dan" hamda "gacha" ni aniq sanalar bilan (YYYY-MM-DD) to'ldir — pastdagi
+bugungi sanaga asoslanib hisobla. Agar foydalanuvchi aniq faylni/excelni/xlsx
+yoki eksportni so'rasa — "fayl_kerak" = true, aks holda false.
 
 Agar turi = daromad bo'lsa, kategoriya shulardan biri bo'lishi kerak: {daromad_list}
 Agar turi = harajat bo'lsa, kategoriya shulardan biri bo'lishi kerak: {harajat_list}
@@ -175,7 +196,7 @@ MUHIM — odamlarga bergan pul ham xarajat:
 
 Summalarni to'g'ri tushun: "4 million", "4mln", "4000000", "4 ming" (=4000) kabi
 ifodalarni to'g'ri songa o'gir. Agar xabarda moliyaviy ma'lumot umuman bo'lmasa
-(na pul, na hisobot so'rovi), "turi" ni "noaniq" qilib qaytar.{kurs_bloki}
+(na pul, na hisobot so'rovi), "turi" ni "noaniq" qilib qaytar.{kurs_bloki}{sana_bloki_uz}
 """
 
 

@@ -212,6 +212,22 @@ body{
   box-shadow:0 12px 26px rgba(91,80,216,.45);display:flex;align-items:center;
   justify-content:center;font-size:23px}
 .micmid .mico.rec{animation:micpulse 1.1s infinite;background:linear-gradient(135deg,#FF5D5D,#FF7A7A)}
+/* --- Ovozli kiritish sheet: markaziy katta mikrofon -> check, jonli matn --- */
+.vsheet{padding-top:4px}
+.vmicwrap{display:flex;justify-content:center;margin:28px 0 18px}
+.vmicbtn{width:92px;height:92px;border-radius:50%;border:none;background:var(--grad);color:#fff;
+  box-shadow:0 16px 34px rgba(91,80,216,.42);display:flex;align-items:center;justify-content:center;
+  cursor:pointer;transition:background .25s}
+.vmicbtn svg{width:34px;height:34px}
+.vmicbtn.rec{background:linear-gradient(135deg,#FF5D5D,#FF7A7A);animation:micpulse2 1.3s infinite}
+.vmicbtn.busy{opacity:.55;pointer-events:none;animation:none}
+.vmicbtn .swap{display:flex;animation:iconswap .32s ease}
+@keyframes iconswap{0%{transform:scale(.3) rotate(-25deg);opacity:0}100%{transform:scale(1) rotate(0);opacity:1}}
+@keyframes micpulse2{0%,100%{box-shadow:0 0 0 0 rgba(255,93,93,.5)}50%{box-shadow:0 0 0 18px rgba(255,93,93,0)}}
+.vcaption{min-height:50px;text-align:center;font-size:14.5px;color:var(--tx2);padding:0 16px;line-height:1.5}
+.vcaption.live{color:var(--tx);font-weight:600}
+.vcaption.ok{color:var(--green);font-weight:700}
+.vcaption.bad{color:var(--red)}
 .tab{flex:1;border:none;background:transparent;display:flex;flex-direction:column;align-items:center;
   gap:3px;color:#A7A8BD;cursor:pointer;font-family:inherit;padding:2px 0}
 .tab svg{width:22px;height:22px}
@@ -337,6 +353,13 @@ ru: {
   n_ops: "{n} операций", n_ops1: "1 операция", n_ops2: "{n} операции",
   st_credit: "Зачислено", st_done: "Выполнено",
   p_eyebrow: "Личные настройки", p_title: "Профиль",
+  v2_title: "Голосовая запись", v2_tap: "Нажмите на микрофон и говорите",
+  v2_rec: "Слушаю… нажмите ✓, когда закончите",
+  v2_proc: "Распознаю и анализирую…",
+  v2_ok: "Добавлено!", v2_add_more: "Сказать ещё",
+  v2_report: "Это похоже на запрос отчёта — отчёты смотрите на главном экране",
+  v2_err: "Не понял. Скажите, например: «Потратил 50 тысяч на продукты»",
+  v2_close: "Закрыть",
   st_ops: "операции", st_cats: "категории", st_days: "с нами",
   d_days: "дн.", d_months: "мес.", d_years: "года", d_years1: "год", d_years5: "лет",
   m_settings: "Настройки приложения", m_settings_sub: "Язык, тема и уведомления",
@@ -408,6 +431,13 @@ uz: {
   st_credit: "Kirim qilindi", st_done: "Bajarildi",
   p_eyebrow: "Shaxsiy sozlamalar", p_title: "Profil",
   st_ops: "operatsiya", st_cats: "kategoriyalar", st_days: "biz bilan",
+  v2_title: "Ovozli yozuv", v2_tap: "Mikrofonni bosing va gapiring",
+  v2_rec: "Tinglayapman… tugatgach ✓ ni bosing",
+  v2_proc: "Tanib olinmoqda va tahlil qilinmoqda…",
+  v2_ok: "Qo'shildi!", v2_add_more: "Yana aytish",
+  v2_report: "Bu hisobot so'roviga o'xshaydi — hisobotlarni bosh ekranda ko'ring",
+  v2_err: "Tushunmadim. Masalan shunday ayting: «Ovqatga 50 ming sarfladim»",
+  v2_close: "Yopish",
   d_days: "kun", d_months: "oy", d_years: "yil", d_years1: "yil", d_years5: "yil",
   m_settings: "Ilova sozlamalari", m_settings_sub: "Til, mavzu va bildirishnomalar",
   m_history: "Operatsiyalar tarixi", m_history_sub: "Barcha daromad va xarajatlar",
@@ -495,6 +525,7 @@ const ICONS = {
   game: SV('<rect x="2" y="7" width="20" height="12" rx="5"/><path d="M7 11v4"/><path d="M5 13h4"/><path d="M16 11.5h.01"/><path d="M18.5 14h.01"/>'),
   card: SV('<rect x="2" y="5" width="20" height="14" rx="3"/><path d="M2 10h20"/>'),
   dots: SV('<circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/>'),
+  mic: SV('<path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><path d="M12 19v4"/><path d="M8 23h8"/>'),
 };
 const CAT_ICON_FALLBACK = ICONS.dots;
 function catIcon(key){ return ICONS[(S.cats[key]||{}).icon] || CAT_ICON_FALLBACK; }
@@ -970,6 +1001,11 @@ function closeSheet(){
   $("sheet").classList.remove("show");
   sheetOpen = false;
   try{ tg && tg.BackButton && tg.BackButton.hide(); }catch(e){}
+  // Ovozli yozuv sheet ochiq holda yopilsa — yozib olishni to'xtatamiz (mikrofon ishlab qolmasin)
+  try{
+    if (S._v2 && S._v2.rec && S._v2.rec.state !== "inactive") S._v2.rec.stop();
+    S._v2 = null; _v2SpeechStop();
+  }catch(e){}
 }
 function toast(msg){
   const el = $("toast"); el.textContent = msg; el.classList.add("show");
@@ -1277,11 +1313,105 @@ async function voiceInput(){
 function stopMic(){
   try{ if (S._mic && S._mic.rec && S._mic.rec.state !== "inactive") S._mic.rec.stop(); }catch(e){}
 }
-/* --- Pastki bar o'rtasidagi katta 🎙: forma ochiladi, ovoz darhol yoziladi --- */
+/* --- Pastki bar o'rtasidagi katta 🎙: alohida ovozli-yozuv sheet (forma ochilmaydi) ---
+   Oqim: mikrofon bosiladi -> yozib olish boshlanadi, ikonka animatsiya bilan ✓ ga
+   aylanadi, pastida jonli matn (Web Speech API, mavjud bo'lsa) ko'rinadi -> ✓ bosilsa
+   yozib olish to'xtaydi, AI tahlil qiladi va natija AVTOMATIK qo'shiladi. --- */
+let _v2speech = null;
 function micOpen(){
   haptic("medium");
-  openForm(null);
-  setTimeout(()=>{ if ($("micBtn")) voiceInput(); }, 450);
+  showSheet(`<div class="vsheet">
+    <h3 style="text-align:center">${esc(t("v2_title"))}</h3>
+    <div class="vmicwrap"><button type="button" class="vmicbtn" id="v2Btn" onclick="v2Toggle()">
+      <span class="swap" id="v2Icon">${ICONS.mic}</span></button></div>
+    <div class="vcaption" id="v2Cap">${esc(t("v2_tap"))}</div>
+  </div>`);
+  S._v2 = null;
+}
+function v2SetIcon(svg){
+  const el = $("v2Icon"); if (!el) return;
+  el.classList.remove("swap"); void el.offsetWidth; el.classList.add("swap");
+  el.innerHTML = svg;
+}
+function v2Cap(msg, cls){
+  const el = $("v2Cap"); if (!el) return;
+  el.className = "vcaption" + (cls ? " " + cls : "");
+  el.textContent = msg || "";
+}
+function _v2SpeechStart(){
+  try{
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) return;
+    const rec = new SR();
+    rec.lang = S.lang === "ru" ? "ru-RU" : "uz-UZ";
+    rec.continuous = true; rec.interimResults = true;
+    rec.onresult = e => {
+      let text = "";
+      for (let i = 0; i < e.results.length; i++) text += e.results[i][0].transcript;
+      if (text) v2Cap(text, "live");
+    };
+    rec.onerror = () => {};
+    rec.start();
+    _v2speech = rec;
+  }catch(e){ _v2speech = null; }
+}
+function _v2SpeechStop(){
+  try{ if (_v2speech) _v2speech.stop(); }catch(e){}
+  _v2speech = null;
+}
+function v2Stop(){
+  try{ if (S._v2 && S._v2.rec && S._v2.rec.state !== "inactive") S._v2.rec.stop(); }catch(e){}
+}
+async function v2Toggle(){
+  const btn = $("v2Btn");
+  if (!btn) return;
+  if (S._v2 && S._v2.rec && S._v2.rec.state === "recording"){ v2Stop(); return; }
+  if (S._v2 && S._v2.busy) return;
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+    v2Cap(t("v2_err"), "bad"); return;
+  }
+  try{
+    const stream = await navigator.mediaDevices.getUserMedia({audio:true});
+    const mr = new MediaRecorder(stream, {mimeType: mimeFor()});
+    const parts = [];
+    mr.ondataavailable = e => { if (e.data && e.data.size) parts.push(e.data); };
+    mr.onstop = async () => {
+      stream.getTracks().forEach(x=>x.stop());
+      btn.classList.remove("rec");
+      v2SetIcon(ICONS.mic);
+      _v2SpeechStop();
+      const blob = new Blob(parts, {type: S._v2.mime});
+      if (blob.size < 1200){ S._v2 = null; v2Cap(t("v2_err"), "bad"); return; }
+      btn.classList.add("busy");
+      v2Cap(t("v2_proc"));
+      S._v2.busy = true;
+      try{
+        const buf = await blob.arrayBuffer();
+        const res = await api("/api/voice", "POST", buf, {"X-Audio-Mime": S._v2.mime});
+        btn.classList.remove("busy");
+        if (res.ok){
+          // Forma ochilmaydi — AI natijasi to'g'ridan-to'g'ri yozuv sifatida qo'shiladi
+          await api("/api/transactions", "POST", {
+            turi: res.turi, kategoriya: res.kategoriya, summa: res.summa, izoh: res.izoh || "",
+          });
+          S._v2 = null;
+          haptic("ok");
+          v2Cap((res.matn ? "«" + res.matn + "» — " : "") + t("v2_ok"), "ok");
+          await load();
+        } else {
+          S._v2 = null;
+          v2Cap(res.xato === "hisobot" ? t("v2_report") : t("v2_err"), "bad");
+          haptic("heavy");
+        }
+      }catch(e){ S._v2 = null; btn.classList.remove("busy"); v2Cap(t("v2_err"), "bad"); }
+    };
+    S._v2 = {rec: mr, mime: mr.mimeType || "audio/webm", busy:false};
+    mr.start();
+    btn.classList.add("rec");
+    v2SetIcon(ICONS.check);
+    v2Cap(t("v2_rec"), "live");
+    _v2SpeechStart();
+  }catch(e){ v2Cap(t("v2_err"), "bad"); }
 }
 async function saveForm(){
   if (S._saving) return;  // ikki marta bosishdan himoya (takroriy yozuv chiqmasin)
