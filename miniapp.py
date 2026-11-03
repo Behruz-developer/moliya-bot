@@ -24,7 +24,6 @@ from categories import KATEGORIYALAR, kat_kalit
 logger = logging.getLogger(__name__)
 
 _AUTH_MAX_YOSH = 86400  # initData amal qilish muddati (24 soat)
-_html_cache = None
 
 
 def _hash_hisobla(qiymatlar: dict, secret: bytes) -> str:
@@ -210,12 +209,23 @@ def _xlsx_yubor(chat_id, fayl_bytes: bytes, nomi: str, izoh: str) -> bool:
         return False
 
 
+_html_cache = None
+_html_mtime = 0
+
+
 def _html_olish() -> str:
-    global _html_cache
-    if _html_cache is None:
-        yuli = os.path.join(os.path.dirname(os.path.abspath(__file__)), "miniapp.html")
+    """miniapp.html ni o'qiydi. Fayl o'zgarsa (mtime bo'yicha) qayta o'qiydi —
+    shunda yangi deploy'dan keyin darhol yangi versiya beriladi."""
+    global _html_cache, _html_mtime
+    yuli = os.path.join(os.path.dirname(os.path.abspath(__file__)), "miniapp.html")
+    try:
+        mtime = os.path.getmtime(yuli)
+    except OSError:
+        mtime = 0
+    if _html_cache is None or mtime != _html_mtime:
         with open(yuli, encoding="utf-8") as f:
             _html_cache = f.read()
+        _html_mtime = mtime
     return _html_cache.replace("@@SUPPORT_URL@@", _support_url())
 
 
@@ -224,7 +234,13 @@ def register(app):
 
     @app.route("/app")
     def miniapp_sahifa():
-        return Response(_html_olish(), mimetype="text/html")
+        # Keshni o'chirib qo'yamiz: Telegram WebView telefonda ESKI versiyani
+        # keshdan ko'rsatmasin (aqs holda yangi funksiyalar ko'rinmaydi).
+        resp = Response(_html_olish(), mimetype="text/html")
+        resp.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        resp.headers["Pragma"] = "no-cache"
+        resp.headers["Expires"] = "0"
+        return resp
 
     @app.route("/api/me", methods=["POST"])
     def api_me():
