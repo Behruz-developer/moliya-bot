@@ -28,5 +28,15 @@
     "summa": 500000,
     "izoh": "Benzin uchun xarajat",
     "asl_matn": "Endi bundan 500 ming benzinga ishlataman"
+  },
+  {
+    "id": "1d5eb0f2",
+    "sana": "2026-11-10",
+    "vaqt": "13:26",
+    "turi": "Harajat",
+    "kategoriya": "Oziq-ovqat",
+    "summa": 1000000,
+    "izoh": "Uyga bozorlik",
+    "asl_matn": "1 million uyga bozorlik qildim"
   }
 ]
