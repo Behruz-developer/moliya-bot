@@ -1,1 +1,12 @@
-[]
+[
+  {
+    "id": "0bea11a1",
+    "sana": "2026-11-10",
+    "vaqt": "13:42",
+    "turi": "Daromad",
+    "kategoriya": "Oylik",
+    "summa": 10000000,
+    "izoh": "Oylik maosh olindi",
+    "asl_matn": "Men 10 million oylik oldim"
+  }
+]
