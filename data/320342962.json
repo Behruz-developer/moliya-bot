@@ -1,6 +1,5 @@
 [
   {
-<<<<<<< HEAD
     "id": "886b0294",
     "sana": "2026-11-10",
     "vaqt": "11:37",
@@ -8,45 +7,6 @@
     "kategoriya": "Oylik",
     "summa": 10000000,
     "izoh": "Oylik oldim",
-    "asl_matn": "Bugun 10 million oylik oldim"
-  },
-  {
-    "id": "0bea11a1",
-    "sana": "2026-11-10",
-    "vaqt": "13:42",
-=======
-    "id": "8f225159",
-    "sana": "2026-11-10",
-    "vaqt": "13:38",
->>>>>>> 8610668 (Dashboard: lokal data zaxirasi)
-    "turi": "Daromad",
-    "kategoriya": "Oylik",
-    "summa": 10000000,
-    "izoh": "Oylik maosh olindi",
-<<<<<<< HEAD
-<<<<<<< HEAD
-    "asl_matn": "Men 10 million oylik oldim"
-  },
-  {
-    "id": "86136507",
-    "sana": "2026-11-10",
-    "vaqt": "13:42",
-    "turi": "Harajat",
-    "kategoriya": "Transport",
-    "summa": 500000,
-    "izoh": "Benzinga xarajat",
-    "asl_matn": "500 ming benzinga ishlatdim"
-  },
-  {
-    "id": "ec388a93",
-    "sana": "2026-11-10",
-    "vaqt": "13:43",
-    "turi": "Harajat",
-    "kategoriya": "Uy-ro'zg'or",
-    "summa": 1000000,
-    "izoh": "Uyga bozorlik",
-    "asl_matn": "Millionga uyga bozorlik qildim"
-=======
     "asl_matn": "Bugun 10 million oylik oldim"
   },
   {
@@ -78,9 +38,16 @@
     "summa": 1500000,
     "izoh": "Tish shifokoriga to'lov",
     "asl_matn": "bir yarim million Saydagi tish shifokoriga berdim"
->>>>>>> fc0676c (Dashboard: lokal data zaxirasi)
-=======
-    "asl_matn": "Men bugun 10 million oylik oldim"
+  },
+  {
+    "id": "8f225159",
+    "sana": "2026-11-10",
+    "vaqt": "13:38",
+    "turi": "Daromad",
+    "kategoriya": "Oylik",
+    "summa": 10000000,
+    "izoh": "Oylik maosh olindi",
+    "asl_matn": "Bugun 10 million oylik oldim"
   },
   {
     "id": "88b6cdd7",
@@ -91,6 +58,35 @@
     "summa": 500000,
     "izoh": "Benzin olindi",
     "asl_matn": "500 mingga benzin oldim"
->>>>>>> 8610668 (Dashboard: lokal data zaxirasi)
+  },
+  {
+    "id": "0bea11a1",
+    "sana": "2026-11-10",
+    "vaqt": "13:42",
+    "turi": "Daromad",
+    "kategoriya": "Oylik",
+    "summa": 10000000,
+    "izoh": "Oylik maosh olindi",
+    "asl_matn": "Men 10 million oylik oldim"
+  },
+  {
+    "id": "86136507",
+    "sana": "2026-11-10",
+    "vaqt": "13:42",
+    "turi": "Harajat",
+    "kategoriya": "Transport",
+    "summa": 500000,
+    "izoh": "Benzinga xarajat",
+    "asl_matn": "500 ming benzinga ishlatdim"
+  },
+  {
+    "id": "ec388a93",
+    "sana": "2026-11-10",
+    "vaqt": "13:43",
+    "turi": "Harajat",
+    "kategoriya": "Uy-ro'zg'or",
+    "summa": 1000000,
+    "izoh": "Uyga bozorlik",
+    "asl_matn": "Millionga uyga bozorlik qildim"
   }
 ]
