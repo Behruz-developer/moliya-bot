@@ -18,5 +18,15 @@
     "summa": 500000,
     "izoh": "Benzinga xarajat",
     "asl_matn": "500 ming benzinga ishlatdim"
+  },
+  {
+    "id": "ec388a93",
+    "sana": "2026-11-10",
+    "vaqt": "13:43",
+    "turi": "Harajat",
+    "kategoriya": "Uy-ro'zg'or",
+    "summa": 1000000,
+    "izoh": "Uyga bozorlik",
+    "asl_matn": "Millionga uyga bozorlik qildim"
   }
 ]
