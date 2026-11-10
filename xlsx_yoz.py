@@ -316,24 +316,41 @@ def hisobot_yarat(yozuvlar: list, davr_matni: str, egasi: str = "", til: str = "
         merges.append(f'A{r}:{oxirgi}{r}')
         r += 1
         kat_th_r = r
+        # Kategoriya nomi A:B birlashtirilgan (A ustun — № uchun, tor), soni C, summa D
         satr.append(
             f'<row r="{kat_th_r}">'
             + txt(f"A{kat_th_r}", 1, tr["kat_th_nom"])
-            + txt(f"B{kat_th_r}", 1, tr["kat_th_soni"])
-            + txt(f"C{kat_th_r}", 1, tr["kat_th_summa"])
+            + txt(f"C{kat_th_r}", 1, tr["kat_th_soni"])
+            + txt(f"D{kat_th_r}", 1, tr["kat_th_summa"])
             + "</row>"
         )
+        merges.append(f'A{kat_th_r}:B{kat_th_r}')
         r += 1
+        kat_jami_summa, kat_jami_soni = 0, 0
         for nom, summa in sorted(kat_jami.items(), key=lambda x: -x[1]):
             kr = r
             satr.append(
                 f'<row r="{kr}">'
                 + txt(f"A{kr}", 2, nom)
-                + f'<c r="B{kr}" s="2"><v>{kat_soni[nom]}</v></c>'
-                + f'<c r="C{kr}" s="8"><v>{summa}</v></c>'
+                + f'<c r="C{kr}" s="2"><v>{kat_soni[nom]}</v></c>'
+                + f'<c r="D{kr}" s="8"><v>{summa}</v></c>'
                 + "</row>"
             )
+            merges.append(f'A{kr}:B{kr}')
+            kat_jami_summa += summa
+            kat_jami_soni += kat_soni[nom]
             r += 1
+        # JAMI qator — lavanda fonda
+        kr = r
+        satr.append(
+            f'<row r="{kr}">'
+            + txt(f"A{kr}", 4, tr["jami"])
+            + f'<c r="C{kr}" s="5"><v>{kat_jami_soni}</v></c>'
+            + f'<c r="D{kr}" s="5"><v>{kat_jami_summa}</v></c>'
+            + "</row>"
+        )
+        merges.append(f'A{kr}:B{kr}')
+        r += 1
 
     merge_tags = "".join(f'<mergeCell ref="{m}"/>' for m in merges)
     merges_xml = f'<mergeCells count="{len(merges)}">{merge_tags}</mergeCells>' if merges else ""
