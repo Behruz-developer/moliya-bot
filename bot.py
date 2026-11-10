@@ -79,13 +79,8 @@ T = {
             "• “Bugun 4 million oylik oldim”\n"
             "• “Bozorga 150 ming sarfladim”\n\n"
             "Bot summa, kategoriya va turini o‘zi aniqlaydi.\n\n"
-            "📊 /balans — hisobot\n"
-            "🕓 /oxirgi — oxirgi yozuvlar\n"
-            "📥 /eksport — Excel fayl\n"
-            "🧹 /tozalash — barcha yozuvlarni o‘chirish\n"
-            "🔗 /sahifa — moliya ilovasi\n"
-            "🌐 /til — tilni o‘zgartirish\n\n"
-            "💡 Barcha funksiyalar pastdagi menyuda ham mavjud."
+            "📊 Hisobot, tahrirlash va barcha boshqaruv — 📱 Moliya ilovasida "
+            "(pastdagi tugma)."
         ),
         "balans_sarlavha": "📊 Hisobotingiz:",
         "balans_xato": "❌ Hisobotni olishda xatolik yuz berdi. Birozdan so'ng qaytadan urinib ko'ring.",
@@ -167,6 +162,7 @@ T = {
         "his_daromad": "🟢 Daromad", "his_harajat": "🔴 Xarajat",
         "his_balans": "💼 Balans", "his_soni": "🔢 Yozuvlar soni: {n} ta",
         "his_kat": "📂 Kategoriyalar bo'yicha:",
+        "hisobot_app": "📊 Hisobot 📱 Moliya ilovasida — quyidagi tugma orqali oching.",
         "his_takror": "⚠️ Xuddi shunday yozuv hozirgina qo'shilgan — takroriy xabar saqlanmadi.",
         "id_mening": "🆔 Sizning ID raqamingiz:",
         "id_username": "👤 Username:",
@@ -193,13 +189,7 @@ T = {
             "• “Сегодня получил зарплату 4 миллиона”\n"
             "• “Потратил 150 тысяч на базаре”\n\n"
             "Бот сам определит сумму, категорию и тип операции.\n\n"
-            "📊 /balans — отчёт\n"
-            "🕓 /oxirgi — последние записи\n"
-            "📥 /eksport — Excel-файл\n"
-            "🧹 /tozalash — удалить все записи\n"
-            "🔗 /sahifa — финансовое приложение\n"
-            "🌐 /til — изменить язык\n\n"
-            "💡 Все функции также доступны в меню ниже."
+            "📊 Отчёты и всё управление — 📱 в приложении (кнопка ниже)."
         ),
         "balans_sarlavha": "📊 Ваш отчёт:",
         "balans_xato": "❌ Ошибка при получении отчёта. Попробуйте позже.",
@@ -281,6 +271,7 @@ T = {
         "his_daromad": "🟢 Доход", "his_harajat": "🔴 Расход",
         "his_balans": "💼 Баланс", "his_soni": "🔢 Кол-во записей: {n}",
         "his_kat": "📂 По категориям:",
+        "hisobot_app": "📊 Отчёт 📱 в приложении «Молия» — откройте через кнопку ниже.",
         "his_takror": "⚠️ Такая же запись только что добавлена — повторное сообщение не сохранено.",
         "id_mening": "🆔 Ваш ID:",
         "id_username": "👤 Имя пользователя:",
@@ -495,20 +486,22 @@ async def _hisobot_fayl_yubor(update, context, til: str, davr: str, nima: str,
 async def _natijani_saqla_va_javob_ber(update, context, natija: dict, til: str):
     t = T[til]
 
-    # Hisobot so'rovi — yozuv EMAS, hisobot matni yoki (so'ralsa) .xlsx fayl
+    # Hisobot so'rovi — yozuv EMAS. Hisobotlar ilova ichida ko'rinadi:
+    # bot shunchaki ilovaga havola bilan qisqa javob qaytaradi.
     if natija.get("turi") == "hisobot":
         davr = natija.get("davr", "hammasi")
         nima = natija.get("nima", "hammasi")
         dan = natija.get("dan", "") or ""
         gacha = natija.get("gacha", "") or ""
-        # Aniq sana oralig'i ("10-oktabrdan 15-oktabrgacha") yoki aniq fayl so'ralsa —
-        # chiroyli .xlsx hisobot yuboriladi; aks holda qisqa matnli hisobot yetarli.
+        # Aniq sana oralig'i ("10-oktabrdan 15-oktabrgacha") yoki aniq fayl
+        # so'ralsa — chiroyli .xlsx yuboriladi.
         if natija.get("fayl_kerak") or davr == "maxsus":
             await _hisobot_fayl_yubor(update, context, til, davr, nima, dan, gacha)
             return
-        await update.message.reply_text(
-            _hisobot_matni(update.effective_chat.id, til, davr, nima, dan, gacha)
+        kb = InlineKeyboardMarkup(
+            [[InlineKeyboardButton(t["hisobot_tugma"], web_app=WebAppInfo(url=MINIAPP_URL))]]
         )
+        await update.message.reply_text(t["hisobot_app"], reply_markup=kb)
         return
 
     if natija.get("turi") not in ("daromad", "harajat"):
